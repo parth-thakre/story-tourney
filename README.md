@@ -61,17 +61,15 @@ npm install
 
 ### Configure
 
-Create a root `.env` file.
+Create a root `.env` file if you want live OpenRouter calls.
 
 Minimum setup:
 
 ```env
-PORT=3001
-DB_PATH=./data/story-tourney.sqlite
 OPENROUTER_API_KEY=
-OPENROUTER_SITE_URL=
-OPENROUTER_APP_NAME=Story Tourney
 ```
+
+That is the only required environment variable for live model calls.
 
 If `OPENROUTER_API_KEY` is omitted, the backend falls back to deterministic mock outputs.
 
