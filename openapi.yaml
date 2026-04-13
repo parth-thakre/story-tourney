@@ -1,0 +1,511 @@
+openapi: 3.1.0
+info:
+  title: Story Tournament Backend API
+  version: 1.0.0
+  description: Backend API for the story tournament app.
+servers:
+  - url: http://localhost:3001
+tags:
+  - name: Health
+  - name: Models
+  - name: Tournaments
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/models:
+    get:
+      tags: [Models]
+      summary: List available models
+      responses:
+        "200":
+          description: Available models
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelsResponse"
+  /api/tournaments:
+    get:
+      tags: [Tournaments]
+      summary: List tournaments
+      responses:
+        "200":
+          description: Tournament list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentListResponse"
+    post:
+      tags: [Tournaments]
+      summary: Create a tournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentRequest"
+      responses:
+        "201":
+          description: Tournament created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentView"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/tournaments/{id}:
+    get:
+      tags: [Tournaments]
+      summary: Get a tournament by id
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      responses:
+        "200":
+          description: Tournament view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentView"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/tournaments/{id}/retry:
+    post:
+      tags: [Tournaments]
+      summary: Retry a tournament run
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RetryTournamentRequest"
+      responses:
+        "200":
+          description: Tournament rerun state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentView"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+  /api/tournaments/{id}/export:
+    get:
+      tags: [Tournaments]
+      summary: Export tournament results
+      parameters:
+        - $ref: "#/components/parameters/TournamentId"
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [md, txt]
+            default: md
+      responses:
+        "200":
+          description: Exported tournament content
+          content:
+            text/markdown:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  parameters:
+    TournamentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    ModelKey:
+      type: string
+      enum: [sonnet, gpt, glm5, kimi-k25]
+    TournamentStatus:
+      type: string
+      enum: [created, generating, reviewing, revising, ranking, completed, failed]
+    PhaseName:
+      type: string
+      enum: [generation, review, revision, ranking]
+    ProviderCallStatus:
+      type: string
+      enum: [pending, succeeded, failed]
+    ModelRegistryEntry:
+      type: object
+      required:
+        - modelKey
+        - displayName
+        - modelId
+        - provider
+        - providerModelId
+        - providerOrder
+        - apiKey
+        - siteUrl
+        - appName
+      properties:
+        modelKey:
+          $ref: "#/components/schemas/ModelKey"
+        displayName:
+          type: string
+        modelId:
+          type: string
+        provider:
+          type: string
+          enum: [mock, openrouter]
+        providerModelId:
+          type: string
+        providerOrder:
+          type: array
+          items:
+            type: string
+        apiKey:
+          type: [string, "null"]
+        siteUrl:
+          type: [string, "null"]
+        appName:
+          type: [string, "null"]
+    ModelsResponse:
+      type: object
+      required: [models]
+      properties:
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelRegistryEntry"
+    CreateTournamentRequest:
+      type: object
+      required: [prompt, minWords, maxWords, selectedModels]
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+        genreHint:
+          type: [string, "null"]
+        minWords:
+          type: integer
+          minimum: 1
+        maxWords:
+          type: integer
+          minimum: 1
+        selectedModels:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/ModelKey"
+    RetryTournamentRequest:
+      type: object
+      properties:
+        phase:
+          type: string
+          enum: [generation, review, revision, ranking]
+        modelKey:
+          $ref: "#/components/schemas/ModelKey"
+    Tournament:
+      type: object
+      required:
+        - id
+        - prompt
+        - genreHint
+        - minWords
+        - maxWords
+        - status
+        - createdAt
+        - completedAt
+      properties:
+        id:
+          type: string
+        prompt:
+          type: string
+        genreHint:
+          type: [string, "null"]
+        minWords:
+          type: integer
+        maxWords:
+          type: integer
+        status:
+          $ref: "#/components/schemas/TournamentStatus"
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: [string, "null"]
+          format: date-time
+    TournamentModel:
+      type: object
+      required: [id, tournamentId, modelKey, providerModelId, displayName]
+      properties:
+        id:
+          type: string
+        tournamentId:
+          type: string
+        modelKey:
+          $ref: "#/components/schemas/ModelKey"
+        providerModelId:
+          type: string
+        displayName:
+          type: string
+    StoryVersion:
+      type: object
+      required:
+        - id
+        - tournamentId
+        - modelKey
+        - round
+        - title
+        - body
+        - wordCount
+        - changeSummary
+        - createdAt
+      properties:
+        id:
+          type: string
+        tournamentId:
+          type: string
+        modelKey:
+          $ref: "#/components/schemas/ModelKey"
+        round:
+          type: string
+          enum: [original, revised]
+        title:
+          type: string
+        body:
+          type: string
+        wordCount:
+          type: integer
+        changeSummary:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+    Review:
+      type: object
+      required:
+        - id
+        - tournamentId
+        - reviewerModelKey
+        - targetStoryVersionId
+        - anonymizedLabel
+        - promptFit
+        - originality
+        - coherence
+        - prose
+        - emotionalImpact
+        - strengths
+        - weaknesses
+        - revisionSuggestion
+        - overallComment
+        - createdAt
+      properties:
+        id:
+          type: string
+        tournamentId:
+          type: string
+        reviewerModelKey:
+          $ref: "#/components/schemas/ModelKey"
+        targetStoryVersionId:
+          type: string
+        anonymizedLabel:
+          type: string
+        promptFit:
+          type: integer
+        originality:
+          type: integer
+        coherence:
+          type: integer
+        prose:
+          type: integer
+        emotionalImpact:
+          type: integer
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        revisionSuggestion:
+          type: string
+        overallComment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    FinalRanking:
+      type: object
+      required:
+        - id
+        - tournamentId
+        - reviewerModelKey
+        - rankedStoryVersionId
+        - rank
+        - justification
+        - createdAt
+      properties:
+        id:
+          type: string
+        tournamentId:
+          type: string
+        reviewerModelKey:
+          $ref: "#/components/schemas/ModelKey"
+        rankedStoryVersionId:
+          type: string
+        rank:
+          type: integer
+          enum: [1, 2, 3, 4]
+        justification:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    TournamentResult:
+      type: object
+      required: [tournamentId, storyVersionId, finalRank, bordaPoints, firstPlaceVotes]
+      properties:
+        tournamentId:
+          type: string
+        storyVersionId:
+          type: string
+        finalRank:
+          type: integer
+        bordaPoints:
+          type: integer
+        firstPlaceVotes:
+          type: integer
+    ProviderCall:
+      type: object
+      required:
+        - id
+        - tournamentId
+        - phase
+        - modelKey
+        - status
+        - attempt
+        - requestJson
+        - responseJson
+        - contextJson
+        - error
+        - createdAt
+        - completedAt
+      properties:
+        id:
+          type: string
+        tournamentId:
+          type: string
+        phase:
+          $ref: "#/components/schemas/PhaseName"
+        modelKey:
+          $ref: "#/components/schemas/ModelKey"
+        status:
+          $ref: "#/components/schemas/ProviderCallStatus"
+        attempt:
+          type: integer
+        requestJson:
+          type: string
+        responseJson:
+          type: [string, "null"]
+        contextJson:
+          type: string
+        error:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: [string, "null"]
+          format: date-time
+    TournamentProgress:
+      type: object
+      required: [phase, complete, total, failed]
+      properties:
+        phase:
+          $ref: "#/components/schemas/PhaseName"
+        complete:
+          type: integer
+        total:
+          type: integer
+        failed:
+          type: integer
+    TournamentView:
+      type: object
+      required:
+        - tournament
+        - models
+        - storyVersions
+        - reviews
+        - finalRankings
+        - results
+        - providerCalls
+        - progress
+      properties:
+        tournament:
+          $ref: "#/components/schemas/Tournament"
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentModel"
+        storyVersions:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoryVersion"
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        finalRankings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinalRanking"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentResult"
+        providerCalls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderCall"
+        progress:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/TournamentProgress"
+    TournamentListResponse:
+      type: object
+      required: [tournaments]
+      properties:
+        tournaments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentView"
