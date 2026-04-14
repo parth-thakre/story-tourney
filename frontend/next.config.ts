@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import os from "node:os";
+import path from "node:path";
 
 const hostname = os.hostname().trim();
 const allowedDevOrigins = Array.from(
@@ -12,6 +13,9 @@ const allowedDevOrigins = Array.from(
 
 const nextConfig: NextConfig = {
   allowedDevOrigins,
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   async rewrites() {
     const apiBase = process.env.API_PROXY_URL ?? "http://127.0.0.1:9966";
     return [
