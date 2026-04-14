@@ -81,6 +81,7 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Write a story about a clockmaker who discovers that time is running backwards in her workshop..."
           rows={5}
+          maxLength={6000}
           className="input-field"
           autoFocus
         />
@@ -97,6 +98,7 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
           value={genreHint}
           onChange={(e) => setGenreHint(e.target.value)}
           placeholder="e.g. magical realism, noir, literary fiction"
+          maxLength={120}
           className="input-field"
         />
       </div>

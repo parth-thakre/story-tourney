@@ -3,15 +3,24 @@ import { MODEL_KEYS, PHASES } from "./types";
 
 const uniqueStrings = (values: string[]) => new Set(values).size === values.length;
 
+const PROMPT_MAX_CHARS = 6_000;
+const GENRE_HINT_MAX_CHARS = 120;
+const MIN_WORDS_FLOOR = 100;
+const MIN_WORDS_CEILING = 5_000;
+const MAX_WORDS_CEILING = 10_000;
+
 export const createTournamentSchema = z.object({
-  prompt: z.string().trim().min(1),
-  genreHint: z.string().trim().min(1).nullable().optional(),
-  minWords: z.number().int().positive(),
-  maxWords: z.number().int().positive(),
+  prompt: z.string().trim().min(1).max(PROMPT_MAX_CHARS),
+  genreHint: z.string().trim().min(1).max(GENRE_HINT_MAX_CHARS).nullable().optional(),
+  minWords: z.number().int().min(MIN_WORDS_FLOOR).max(MIN_WORDS_CEILING),
+  maxWords: z.number().int().min(MIN_WORDS_FLOOR).max(MAX_WORDS_CEILING),
   selectedModels: z
     .array(z.enum(MODEL_KEYS))
     .length(4)
-    .refine(uniqueStrings, { message: "selectedModels must be unique" }),
+     .refine(uniqueStrings, { message: "selectedModels must be unique" }),
+}).refine((value) => value.minWords <= value.maxWords, {
+  message: "minWords must be less than or equal to maxWords",
+  path: ["maxWords"],
 });
 
 export const retryTournamentSchema = z.object({

@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      HOST: 0.0.0.0
+      PORT: 9966
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-}
+    volumes:
+      - ./data:/app/data
+      - ./tourneys:/app/tourneys
+    user: "${UID:-1000}:${GID:-1000}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    expose:
+      - "9966"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        API_PROXY_URL: http://backend:9966
+    environment:
+      API_PROXY_URL: http://backend:9966
+    ports:
+      - "${FRONTEND_BIND_IP:-127.0.0.1}:9965:9965"
+    user: "${UID:-1000}:${GID:-1000}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - backend

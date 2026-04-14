@@ -40,7 +40,8 @@ const ENV_PREFIX: Record<ModelKey, string> = {
   "kimi-k25": "KIMI_K25",
 };
 
-export const PORT = Number.parseInt(process.env.PORT ?? "3001", 10);
+export const HOST = process.env.HOST ?? "127.0.0.1";
+export const PORT = Number.parseInt(process.env.PORT ?? "9966", 10);
 export const DB_PATH = process.env.DB_PATH ?? "./data/story-tourney.sqlite";
 
 export function getModelConfig(modelKey: ModelKey): ModelRegistryEntry {

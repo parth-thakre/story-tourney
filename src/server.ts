@@ -1,6 +1,5 @@
 import express from "express";
-import cors from "cors";
-import { PORT, getModelRegistry } from "./config";
+import { HOST, PORT, getModelRegistry } from "./config";
 import { createTournamentSchema, retryTournamentSchema } from "./validation";
 import { repository } from "./repository";
 import { getTournamentView, retryTournamentRun, startTournamentRun } from "./orchestrator";
@@ -9,7 +8,7 @@ import { ModelKey } from "./types";
 
 const app = express();
 
-app.use(cors());
+app.disable("x-powered-by");
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (_req, res) => {
@@ -88,6 +87,6 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   res.status(400).json({ error: message });
 });
 
-app.listen(PORT, () => {
-  console.log(`Story tournament backend listening on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Story tournament backend listening on http://${HOST}:${PORT}`);
 });
