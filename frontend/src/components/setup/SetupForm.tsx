@@ -1,8 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ALL_MODELS, MODEL_DISPLAY, type ModelKey } from "@/types";
+import { type ModelKey, type ModelRegistryEntry } from "@/types";
 import { getModels } from "@/lib/api";
+
+const MIN_WORDS_DEFAULT = 800;
+const MAX_WORDS_DEFAULT = 1200;
+const MIN_WORDS_FLOOR = 100;
+const MIN_WORDS_CEILING = 5000;
+const MAX_WORDS_CEILING = 10000;
+
+function parseWordCountInput(value: string) {
+  if (value === "") {
+    return null;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
 
 interface ModelChipProps {
   label: string;
@@ -28,7 +43,7 @@ interface SetupFormProps {
     genreHint: string;
     minWords: number;
     maxWords: number;
-    selectedModels: [ModelKey, ModelKey, ModelKey, ModelKey];
+    selectedModels: ModelKey[];
   }) => void;
   isLoading: boolean;
 }
@@ -36,15 +51,30 @@ interface SetupFormProps {
 export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
   const [prompt, setPrompt] = useState("");
   const [genreHint, setGenreHint] = useState("");
-  const [minWords, setMinWords] = useState(800);
-  const [maxWords, setMaxWords] = useState(1200);
-  const [selectedModels, setSelectedModels] = useState<ModelKey[]>([...ALL_MODELS]);
-  const [availableModels, setAvailableModels] = useState<ModelKey[]>([...ALL_MODELS]);
+  const [minWordsInput, setMinWordsInput] = useState(String(MIN_WORDS_DEFAULT));
+  const [maxWordsInput, setMaxWordsInput] = useState(String(MAX_WORDS_DEFAULT));
+  const [selectedModels, setSelectedModels] = useState<ModelKey[]>([]);
+  const [availableModels, setAvailableModels] = useState<ModelRegistryEntry[]>([]);
+
+  const minWords = parseWordCountInput(minWordsInput);
+  const maxWords = parseWordCountInput(maxWordsInput);
+  const hasValidWordCounts =
+    minWords !== null &&
+    maxWords !== null &&
+    minWords >= MIN_WORDS_FLOOR &&
+    minWords <= MIN_WORDS_CEILING &&
+    maxWords >= MIN_WORDS_FLOOR &&
+    maxWords <= MAX_WORDS_CEILING &&
+    minWords <= maxWords;
 
   useEffect(() => {
     getModels()
       .then((models) => {
-        setAvailableModels(models.map((m) => m.modelKey));
+        setAvailableModels(models);
+        setSelectedModels((current) => {
+          const validCurrent = current.filter((modelKey) => models.some((model) => model.modelKey === modelKey));
+          return validCurrent.length > 0 ? validCurrent : models.slice(0, 4).map((model) => model.modelKey);
+        });
       })
       .catch(() => {});
   }, []);
@@ -57,17 +87,17 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!prompt.trim() || selectedModels.length !== 4) return;
+    if (!prompt.trim() || selectedModels.length !== 4 || !hasValidWordCounts) return;
     onSubmit({
       prompt: prompt.trim(),
       genreHint: genreHint.trim(),
-      minWords,
-      maxWords,
-      selectedModels: [selectedModels[0], selectedModels[1], selectedModels[2], selectedModels[3]],
+      minWords: minWords!,
+      maxWords: maxWords!,
+      selectedModels,
     });
   }
 
-  const isValid = prompt.trim().length > 0 && selectedModels.length === 4;
+  const isValid = prompt.trim().length > 0 && selectedModels.length === 4 && hasValidWordCounts;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full max-w-2xl mx-auto">
@@ -110,19 +140,19 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
         <div className="flex items-center gap-3">
           <input
             type="number"
-            value={minWords}
-            onChange={(e) => setMinWords(Number(e.target.value))}
-            min={100}
-            max={5000}
+            value={minWordsInput}
+            onChange={(e) => setMinWordsInput(e.target.value)}
+            min={MIN_WORDS_FLOOR}
+            max={MIN_WORDS_CEILING}
             className="input-field w-28 text-center"
           />
           <span className="text-zinc-500 font-sans">to</span>
           <input
             type="number"
-            value={maxWords}
-            onChange={(e) => setMaxWords(Number(e.target.value))}
-            min={100}
-            max={10000}
+            value={maxWordsInput}
+            onChange={(e) => setMaxWordsInput(e.target.value)}
+            min={MIN_WORDS_FLOOR}
+            max={MAX_WORDS_CEILING}
             className="input-field w-28 text-center"
           />
           <span className="text-zinc-500 text-sm font-sans ml-2">words</span>
@@ -135,15 +165,20 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
           <span className="text-zinc-500 normal-case tracking-normal ml-2">select exactly 4</span>
         </span>
         <div className="flex flex-wrap gap-3">
-          {availableModels.map((modelKey) => (
+          {availableModels.map((model) => (
             <ModelChip
-              key={modelKey}
-              label={MODEL_DISPLAY[modelKey]}
-              selected={selectedModels.includes(modelKey)}
-              onToggle={() => toggleModel(modelKey)}
+              key={model.modelKey}
+              label={model.displayName}
+              selected={selectedModels.includes(model.modelKey)}
+              onToggle={() => toggleModel(model.modelKey)}
             />
           ))}
         </div>
+        {availableModels.length < 4 && (
+          <p className="text-red-400 text-sm font-sans">
+            Configure at least 4 models on the backend to run a tournament.
+          </p>
+        )}
         {selectedModels.length !== 4 && (
           <p className="text-red-400 text-sm font-sans">
             {selectedModels.length < 4

@@ -17,7 +17,7 @@ export default function SetupPage() {
     genreHint: string;
     minWords: number;
     maxWords: number;
-    selectedModels: [ModelKey, ModelKey, ModelKey, ModelKey];
+    selectedModels: ModelKey[];
   }) {
     setIsLoading(true);
     setError(null);

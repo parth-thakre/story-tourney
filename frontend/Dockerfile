@@ -15,13 +15,12 @@ RUN npm run build
 FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=9965
 ENV API_PROXY_URL=http://backend:9966
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/next.config.ts ./next.config.ts
-COPY --from=build /app/tsconfig.json ./tsconfig.json
-COPY --from=build /app/src ./src
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+RUN chown -R node:node /app
+USER node
 EXPOSE 9965
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]

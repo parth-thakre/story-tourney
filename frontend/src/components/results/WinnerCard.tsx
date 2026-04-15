@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MODEL_DISPLAY, type TournamentResult, type StoryVersion, type Review, type FinalRanking, type ModelKey } from "@/types";
+import { type TournamentResult, type StoryVersion, type Review, type FinalRanking } from "@/types";
 import RankingBreakdown from "@/components/results/RankingBreakdown";
 
 interface WinnerCardProps {
@@ -10,10 +10,11 @@ interface WinnerCardProps {
   originalStory: StoryVersion | null;
   reviews: Review[];
   rankings: FinalRanking[];
-  modelKey: ModelKey;
+  modelName: string;
+  modelNames: Record<string, string>;
 }
 
-export default function WinnerCard({ result, story, originalStory, reviews, rankings, modelKey }: WinnerCardProps) {
+export default function WinnerCard({ result, story, originalStory, reviews, rankings, modelName, modelNames }: WinnerCardProps) {
   const [showOriginal, setShowOriginal] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
@@ -34,7 +35,7 @@ export default function WinnerCard({ result, story, originalStory, reviews, rank
         <div className="reveal-author" onClick={() => setRevealed(true)}>
           {revealed ? (
             <span className="reveal-author__name font-serif text-2xl font-bold text-amber-300">
-              Written by {MODEL_DISPLAY[modelKey]}
+              Written by {modelName}
             </span>
           ) : (
             <button className="reveal-author__btn" onClick={() => setRevealed(true)}>
@@ -84,7 +85,7 @@ export default function WinnerCard({ result, story, originalStory, reviews, rank
         )}
 
         {rankings.length > 0 && (
-          <RankingBreakdown rankings={rankings} />
+          <RankingBreakdown rankings={rankings} modelNames={modelNames} />
         )}
       </div>
     </div>

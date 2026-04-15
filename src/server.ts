@@ -7,16 +7,24 @@ import { buildMarkdownExport, buildPlainTextExport } from "./export";
 import { ModelKey } from "./types";
 
 const app = express();
+let shuttingDown = false;
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  res.status(shuttingDown ? 503 : 200).json({ ok: !shuttingDown });
 });
 
 app.get("/api/models", (_req, res) => {
-  res.json({ models: getModelRegistry() });
+  res.json({
+    models: getModelRegistry().map((model) => ({
+      modelKey: model.modelKey,
+      displayName: model.displayName,
+      provider: model.provider,
+      providerModelId: model.providerModelId,
+    })),
+  });
 });
 
 app.post("/api/tournaments", async (req, res, next) => {
@@ -87,6 +95,30 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   res.status(400).json({ error: message });
 });
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`Story tournament backend listening on http://${HOST}:${PORT}`);
 });
+
+function shutdown(signal: NodeJS.Signals) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+  console.log(`${signal} received, shutting down Story Tourney backend`);
+  server.close((error) => {
+    if (error) {
+      console.error("Failed to close HTTP server cleanly", error);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error("Forcing shutdown after timeout");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

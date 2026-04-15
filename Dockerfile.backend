@@ -19,5 +19,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY prompts ./prompts
+RUN mkdir -p /app/data /app/tourneys && chown -R node:node /app
+USER node
 EXPOSE 9966
 CMD ["npm", "run", "start:backend"]

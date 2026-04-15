@@ -1,12 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
+const PROMPTS_DIR = path.resolve(__dirname, "..", "prompts");
+
 export function renderTemplate(template: string, values: Record<string, string>) {
   return template.replace(/{{(\w+)}}/g, (_match, key: string) => values[key] ?? "");
 }
 
 function loadPromptFile(name: string) {
-  const filePath = path.resolve(process.cwd(), "prompts", name);
+  const filePath = path.join(PROMPTS_DIR, name);
   return fs.readFileSync(filePath, "utf8");
 }
 

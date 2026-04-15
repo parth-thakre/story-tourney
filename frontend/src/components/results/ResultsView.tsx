@@ -16,6 +16,7 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
   const [exporting, setExporting] = useState(false);
 
   const { tournament, storyVersions, reviews, finalRankings, results } = data;
+  const modelNames = Object.fromEntries(data.models.map((model) => [model.modelKey, model.displayName])) as Record<string, string>;
   const originalStories = storyVersions.filter((s) => s.round === "original");
   const revisedStories = storyVersions.filter((s) => s.round === "revised");
 
@@ -101,7 +102,8 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
                     originalStory={originalStory}
                     reviews={storyReviews}
                     rankings={storyRankings}
-                    modelKey={revisedStory.modelKey}
+                    modelName={modelNames[revisedStory.modelKey] ?? revisedStory.modelKey}
+                    modelNames={modelNames}
                   />
                 );
               }
@@ -114,7 +116,8 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
                   originalStory={originalStory}
                   reviews={storyReviews}
                   rankings={storyRankings}
-                  modelKey={revisedStory.modelKey}
+                  modelName={modelNames[revisedStory.modelKey] ?? revisedStory.modelKey}
+                  modelNames={modelNames}
                 />
               );
             })}

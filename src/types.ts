@@ -1,5 +1,4 @@
-export const MODEL_KEYS = ["sonnet", "gpt", "glm5", "kimi-k25"] as const;
-export type ModelKey = (typeof MODEL_KEYS)[number];
+export type ModelKey = string;
 
 export const TOURNAMENT_STATUSES = [
   "created",

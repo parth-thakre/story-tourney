@@ -44,7 +44,7 @@ Open:
 
 ## Self-Hosting
 
-Simple private hosting:
+Cross-platform private hosting (Windows, Linux, Raspberry Pi with Docker):
 
 ```bash
 npm run host

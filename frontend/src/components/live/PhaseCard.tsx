@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MODEL_DISPLAY, type TournamentView, type PhaseName, type ProviderCall, type DisplayPhase } from "@/types";
+import { type TournamentView, type PhaseName, type ProviderCall, type DisplayPhase } from "@/types";
 import DevDrawer from "@/components/live/DevDrawer";
 
 interface PhaseCardProps {
@@ -121,7 +121,7 @@ function PhaseContent({
           return (
             <ModelCallRow
               key={model.modelKey}
-              label={`Story ${i + 1} · ${MODEL_DISPLAY[model.modelKey]}`}
+              label={`Story ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
               detail={done ? `${story.title} · ${story.wordCount} words` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
@@ -148,7 +148,7 @@ function PhaseContent({
           return (
             <ModelCallRow
               key={model.modelKey}
-              label={`Reviewer ${i + 1} · ${MODEL_DISPLAY[model.modelKey]}`}
+              label={`Reviewer ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
               detail={done ? `Reviewed ${reviews.length} stories` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
@@ -175,7 +175,7 @@ function PhaseContent({
           return (
             <ModelCallRow
               key={model.modelKey}
-              label={`Revision ${i + 1} · ${MODEL_DISPLAY[model.modelKey]}`}
+              label={`Revision ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
               detail={done ? `${revision.title} · ${revision.wordCount} words` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
@@ -202,7 +202,7 @@ function PhaseContent({
           return (
             <ModelCallRow
               key={model.modelKey}
-              label={`Judge ${i + 1} · ${MODEL_DISPLAY[model.modelKey]}`}
+              label={`Judge ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
               detail={done ? "Ranked all stories" : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}

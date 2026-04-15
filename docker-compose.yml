@@ -10,16 +10,24 @@ services:
       OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-}
       OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-}
     volumes:
-      - ./data:/app/data
-      - ./tourneys:/app/tourneys
-    user: "${UID:-1000}:${GID:-1000}"
+      - backend-data:/app/data
+      - backend-tourneys:/app/tourneys
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     expose:
       - "9966"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9966/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   frontend:
     build:
@@ -31,11 +39,24 @@ services:
       API_PROXY_URL: http://backend:9966
     ports:
       - "${FRONTEND_BIND_IP:-127.0.0.1}:9965:9965"
-    user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9965/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  backend-data:
+  backend-tourneys:

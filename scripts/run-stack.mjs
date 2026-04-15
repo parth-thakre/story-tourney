@@ -1,6 +1,12 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const shellCommand = process.env.PWSH ?? "pwsh.exe";
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const frontendRoot = path.join(repoRoot, "frontend");
 const mode = process.argv[2];
 
 if (mode !== "dev" && mode !== "start") {
@@ -12,9 +18,15 @@ const scriptName = mode === "dev" ? "dev" : "start";
 const children = [];
 let shuttingDown = false;
 
-function runProcess(name, args, extraEnv = {}) {
-  const child = spawn(npmCommand, args, {
-    cwd: process.cwd(),
+function runProcess(name, args, extraEnv = {}, cwd = repoRoot) {
+  const command = process.platform === "win32" ? shellCommand : npmCommand;
+  const spawnArgs =
+    process.platform === "win32"
+      ? ["-NoLogo", "-NoProfile", "-Command", toPowerShellCommand([npmCommand, ...args])]
+      : args;
+
+  const child = spawn(command, spawnArgs, {
+    cwd,
     env: { ...process.env, ...extraEnv },
     stdio: "inherit",
   });
@@ -31,6 +43,14 @@ function runProcess(name, args, extraEnv = {}) {
 
   children.push(child);
   return child;
+}
+
+function toPowerShellCommand(args) {
+  return `& ${args.map(quoteForPowerShell).join(" ")}`;
+}
+
+function quoteForPowerShell(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
 function shutdown(exitCode = 0) {
@@ -64,6 +84,11 @@ runProcess("backend", ["run", `${scriptName}:backend`], {
   PORT: process.env.PORT ?? "9966",
 });
 
-runProcess("frontend", ["--prefix", "frontend", "run", scriptName], {
-  API_PROXY_URL: process.env.API_PROXY_URL ?? "http://127.0.0.1:9966",
-});
+runProcess(
+  "frontend",
+  ["run", scriptName],
+  {
+    API_PROXY_URL: process.env.API_PROXY_URL ?? "http://127.0.0.1:9966",
+  },
+  frontendRoot,
+);

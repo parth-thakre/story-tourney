@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MODEL_DISPLAY, type TournamentResult, type StoryVersion, type Review, type FinalRanking, type ModelKey } from "@/types";
+import { type TournamentResult, type StoryVersion, type Review, type FinalRanking } from "@/types";
 import RankingBreakdown from "@/components/results/RankingBreakdown";
 
 interface StoryCardProps {
@@ -10,7 +10,8 @@ interface StoryCardProps {
   originalStory: StoryVersion | null;
   reviews: Review[];
   rankings: FinalRanking[];
-  modelKey: ModelKey;
+  modelName: string;
+  modelNames: Record<string, string>;
 }
 
 const PLACE_LABELS: Record<number, string> = {
@@ -27,7 +28,7 @@ const PLACE_STYLES: Record<number, string> = {
   4: "",
 };
 
-export default function StoryCard({ result, story, originalStory, reviews, rankings, modelKey }: StoryCardProps) {
+export default function StoryCard({ result, story, originalStory, reviews, rankings, modelName, modelNames }: StoryCardProps) {
   const [showOriginal, setShowOriginal] = useState(false);
 
   return (
@@ -37,7 +38,7 @@ export default function StoryCard({ result, story, originalStory, reviews, ranki
           <span className={`placement-badge ${PLACE_STYLES[result.finalRank] ?? ""}`}>
             {PLACE_LABELS[result.finalRank] ?? `${result.finalRank}th Place`}
           </span>
-          <span className="font-serif text-lg font-bold text-zinc-200">{MODEL_DISPLAY[modelKey]}</span>
+          <span className="font-serif text-lg font-bold text-zinc-200">{modelName}</span>
           <span className="text-zinc-600 font-sans text-sm">
             {result.bordaPoints} pts · {result.firstPlaceVotes} first-place
           </span>
@@ -80,7 +81,7 @@ export default function StoryCard({ result, story, originalStory, reviews, ranki
         )}
 
         {reviews.length > 0 && <FeedbackSummary reviews={reviews} />}
-        {rankings.length > 0 && <RankingBreakdown rankings={rankings} />}
+        {rankings.length > 0 && <RankingBreakdown rankings={rankings} modelNames={modelNames} />}
       </div>
     </div>
   );

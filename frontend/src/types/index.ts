@@ -1,4 +1,4 @@
-export type ModelKey = "sonnet" | "gpt" | "glm5" | "kimi-k25";
+export type ModelKey = string;
 
 export type TournamentStatus =
   | "created"
@@ -116,10 +116,8 @@ export interface TournamentView {
 export interface ModelRegistryEntry {
   modelKey: ModelKey;
   displayName: string;
-  provider: "mock" | "openai-compatible";
+  provider: "mock" | "openrouter";
   providerModelId: string;
-  baseUrl: string | null;
-  apiKey: string | null;
 }
 
 export interface CreateTournamentRequest {
@@ -127,17 +125,8 @@ export interface CreateTournamentRequest {
   genreHint?: string | null;
   minWords: number;
   maxWords: number;
-  selectedModels: [ModelKey, ModelKey, ModelKey, ModelKey];
+  selectedModels: ModelKey[];
 }
-
-export const MODEL_DISPLAY: Record<ModelKey, string> = {
-  sonnet: "Claude Sonnet 4.6",
-  gpt: "GPT-5.4",
-  glm5: "GLM-5",
-  "kimi-k25": "Kimi K2",
-};
-
-export const ALL_MODELS: ModelKey[] = ["sonnet", "gpt", "glm5", "kimi-k25"];
 
 export const PHASE_CONFIG = [
   { key: "generation" as const, label: "Generate", number: 1 },

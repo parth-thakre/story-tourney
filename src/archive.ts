@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { PhaseName, ProviderCall, TournamentView } from "./types";
 
-const TOURNEYS_DIR = path.resolve(process.cwd(), "tourneys");
+const TOURNEYS_DIR = path.resolve(__dirname, "..", "tourneys");
 
 function ensureDir(dirPath: string) {
   if (!fs.existsSync(dirPath)) {
