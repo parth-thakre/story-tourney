@@ -177,11 +177,15 @@ function mockRevision(prompt: string): RevisionOutput {
 
 function mockRanking(prompt: string): RankingOutput {
   const seed = stableHash(prompt);
-  const labels = ["Story 1", "Story 2", "Story 3", "Story 4"];
+  const labels = prompt
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => /^Story \d+:$/.test(line))
+    .map((line) => line.slice(0, -1));
   const sorted = [...labels].sort((a, b) => stableHash(`${seed}:${a}`) - stableHash(`${seed}:${b}`));
   const ranking = sorted.map((label, index) => ({
     story_label: label,
-    rank: (index + 1) as 1 | 2 | 3 | 4,
+    rank: index + 1,
     justification: pickSentence(seed + index * 7, [
       "Best balance of voice, momentum, and emotional payoff.",
       "The cleanest execution and strongest control of tone.",

@@ -8,6 +8,8 @@ const GENRE_HINT_MAX_CHARS = 120;
 const MIN_WORDS_FLOOR = 100;
 const MIN_WORDS_CEILING = 5_000;
 const MAX_WORDS_CEILING = 10_000;
+const MIN_TOURNAMENT_MODELS = 2;
+const MAX_TOURNAMENT_MODELS = 4;
 
 export const createTournamentSchema = z.object({
   prompt: z.string().trim().min(1).max(PROMPT_MAX_CHARS),
@@ -16,7 +18,8 @@ export const createTournamentSchema = z.object({
   maxWords: z.number().int().min(MIN_WORDS_FLOOR).max(MAX_WORDS_CEILING),
   selectedModels: z
     .array(z.string().trim().min(1))
-    .length(4)
+    .min(MIN_TOURNAMENT_MODELS)
+    .max(MAX_TOURNAMENT_MODELS)
     .refine(uniqueStrings, { message: "selectedModels must be unique" }),
 }).refine((value) => value.minWords <= value.maxWords, {
   message: "minWords must be less than or equal to maxWords",
@@ -64,12 +67,12 @@ export const revisionOutputSchema = z.object({
 
 const rankingItemSchema = z.object({
   story_label: z.string().min(1),
-  rank: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  rank: z.number().int().min(1).max(MAX_TOURNAMENT_MODELS),
   justification: z.string().min(1),
 });
 
 export const rankingOutputSchema = z.object({
-  ranking: z.array(rankingItemSchema).length(4),
+  ranking: z.array(rankingItemSchema).min(MIN_TOURNAMENT_MODELS).max(MAX_TOURNAMENT_MODELS),
   winner_callout: z.string().min(1),
 });
 

@@ -18,7 +18,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Story Tournament",
-  description: "Four models. One prompt. Blind review. See who writes the best story.",
+  description: "Two to four models. One prompt. Blind review. See who writes the best story.",
 };
 
 export default function RootLayout({

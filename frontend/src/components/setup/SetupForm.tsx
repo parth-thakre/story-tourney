@@ -9,6 +9,8 @@ const MAX_WORDS_DEFAULT = 1200;
 const MIN_WORDS_FLOOR = 100;
 const MIN_WORDS_CEILING = 5000;
 const MAX_WORDS_CEILING = 10000;
+const MIN_SELECTED_MODELS = 2;
+const MAX_SELECTED_MODELS = 4;
 
 function parseWordCountInput(value: string) {
   if (value === "") {
@@ -73,21 +75,29 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
         setAvailableModels(models);
         setSelectedModels((current) => {
           const validCurrent = current.filter((modelKey) => models.some((model) => model.modelKey === modelKey));
-          return validCurrent.length > 0 ? validCurrent : models.slice(0, 4).map((model) => model.modelKey);
+          return validCurrent.length > 0 ? validCurrent : models.slice(0, MAX_SELECTED_MODELS).map((model) => model.modelKey);
         });
       })
       .catch(() => {});
   }, []);
 
   function toggleModel(model: ModelKey) {
-    setSelectedModels((prev) =>
-      prev.includes(model) ? prev.filter((m) => m !== model) : [...prev, model]
-    );
+    setSelectedModels((prev) => {
+      if (prev.includes(model)) {
+        return prev.filter((m) => m !== model);
+      }
+
+      if (prev.length >= MAX_SELECTED_MODELS) {
+        return prev;
+      }
+
+      return [...prev, model];
+    });
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!prompt.trim() || selectedModels.length !== 4 || !hasValidWordCounts) return;
+    if (!prompt.trim() || selectedModels.length < MIN_SELECTED_MODELS || selectedModels.length > MAX_SELECTED_MODELS || !hasValidWordCounts) return;
     onSubmit({
       prompt: prompt.trim(),
       genreHint: genreHint.trim(),
@@ -97,7 +107,7 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
     });
   }
 
-  const isValid = prompt.trim().length > 0 && selectedModels.length === 4 && hasValidWordCounts;
+  const isValid = prompt.trim().length > 0 && selectedModels.length >= MIN_SELECTED_MODELS && selectedModels.length <= MAX_SELECTED_MODELS && hasValidWordCounts;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full max-w-2xl mx-auto">
@@ -162,7 +172,7 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
       <div className="flex flex-col gap-3">
         <span className="text-sm text-zinc-400 uppercase tracking-widest font-sans">
           Models
-          <span className="text-zinc-500 normal-case tracking-normal ml-2">select exactly 4</span>
+          <span className="text-zinc-500 normal-case tracking-normal ml-2">select 2 to 4</span>
         </span>
         <div className="flex flex-wrap gap-3">
           {availableModels.map((model) => (
@@ -174,16 +184,16 @@ export default function SetupForm({ onSubmit, isLoading }: SetupFormProps) {
             />
           ))}
         </div>
-        {availableModels.length < 4 && (
+        {availableModels.length < MIN_SELECTED_MODELS && (
           <p className="text-red-400 text-sm font-sans">
-            Configure at least 4 models on the backend to run a tournament.
+            Configure at least 2 models on the backend to run a tournament.
           </p>
         )}
-        {selectedModels.length !== 4 && (
+        {(selectedModels.length < MIN_SELECTED_MODELS || selectedModels.length > MAX_SELECTED_MODELS) && (
           <p className="text-red-400 text-sm font-sans">
-            {selectedModels.length < 4
-              ? `Select ${4 - selectedModels.length} more model${4 - selectedModels.length > 1 ? "s" : ""}`
-              : "Too many models selected — exactly 4 required"}
+            {selectedModels.length < MIN_SELECTED_MODELS
+              ? `Select ${MIN_SELECTED_MODELS - selectedModels.length} more model${MIN_SELECTED_MODELS - selectedModels.length > 1 ? "s" : ""}`
+              : "Too many models selected — at most 4 allowed"}
           </p>
         )}
       </div>

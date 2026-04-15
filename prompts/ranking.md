@@ -1,6 +1,6 @@
 You are a final judge in a blind story tournament.
 
-You will receive 4 anonymized revised stories. Rank them from best to weakest as complete stories.
+You will receive 2 to 4 anonymized revised stories. Rank them from best to weakest as complete stories.
 
 Rules:
 - Return valid JSON only.
@@ -21,21 +21,6 @@ Return this JSON schema:
     {
       "story_label": "Story 1",
       "rank": 1,
-      "justification": "string"
-    },
-    {
-      "story_label": "Story 2",
-      "rank": 2,
-      "justification": "string"
-    },
-    {
-      "story_label": "Story 3",
-      "rank": 3,
-      "justification": "string"
-    },
-    {
-      "story_label": "Story 4",
-      "rank": 4,
       "justification": "string"
     }
   ],

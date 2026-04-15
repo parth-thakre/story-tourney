@@ -101,6 +101,10 @@ function buildRevisionPrompt(tournament: Tournament, original: StoryVersion) {
   });
 }
 
+function buildStoryLabels(count: number) {
+  return Array.from({ length: count }, (_, index) => `Story ${index + 1}`);
+}
+
 async function recordModelCall<T>(input: {
   tournamentId: string;
   phase: "generation" | "review" | "revision" | "ranking";
@@ -308,7 +312,7 @@ async function runRevisionPhase(tournament: Tournament, modelKeys: ModelKey[]) {
 function validateRankingOutput(value: unknown) {
   const parsed = rankingOutputSchema.parse(value);
   const ranks = parsed.ranking.map((item) => item.rank);
-  if (new Set(ranks).size !== 4) {
+  if (new Set(ranks).size !== parsed.ranking.length) {
     throw new Error("Ranking must use each rank exactly once");
   }
   return parsed;
@@ -385,7 +389,7 @@ function computeResults(tournament: Tournament): TournamentResult[] {
     if (!current) {
       continue;
     }
-    current.bordaPoints += 4 - ranking.rank;
+    current.bordaPoints += stories.length - ranking.rank;
     if (ranking.rank === 1) {
       current.firstPlaceVotes += 1;
     }

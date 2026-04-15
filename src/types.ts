@@ -71,7 +71,7 @@ export interface FinalRanking {
   tournamentId: string;
   reviewerModelKey: ModelKey;
   rankedStoryVersionId: string;
-  rank: 1 | 2 | 3 | 4;
+  rank: number;
   justification: string;
   createdAt: string;
 }

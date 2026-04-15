@@ -54,8 +54,8 @@ MODEL_REGISTRY_JSON=[{"modelKey":"sonnet","displayName":"Anthropic Sonnet","mode
 
 Rules:
 
-- keep at least 4 models configured
-- tournaments still run with exactly 4 selected models
+- keep at least 2 models configured
+- tournaments can run with 2 to 4 selected models
 - `modelKey` can be any stable string
 
 Per-model env overrides use the uppercased `modelKey` with non-alphanumeric characters converted to underscores.

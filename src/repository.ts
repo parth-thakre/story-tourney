@@ -71,7 +71,7 @@ type FinalRankingRow = {
   tournament_id: string;
   reviewer_model_key: ModelKey;
   ranked_story_version_id: string;
-  rank: 1 | 2 | 3 | 4;
+  rank: number;
   justification: string;
   created_at: string;
 };
@@ -451,7 +451,7 @@ export class TournamentRepository {
     tournamentId: string;
     reviewerModelKey: ModelKey;
     rankedStoryVersionId: string;
-    rank: 1 | 2 | 3 | 4;
+    rank: number;
     justification: string;
   }) {
     db.prepare(

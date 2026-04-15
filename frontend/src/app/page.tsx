@@ -43,7 +43,7 @@ export default function SetupPage() {
           Story Tournament
         </h1>
         <p className="mt-3 text-zinc-400 font-sans text-base max-w-md mx-auto">
-          Four models. One prompt. Blind review. See who writes the best story.
+          Two to four models. One prompt. Blind review. See who writes the best story.
         </p>
       </header>
 
