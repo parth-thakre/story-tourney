@@ -33,6 +33,8 @@ If `.env` is missing or the key is empty, the backend uses deterministic mock ou
 
 The self-host scripts load `.env` automatically before starting Docker or Tailscale publishing.
 
+For Docker self-hosting, the backend service also loads the same root `.env` directly through Compose, so `MODEL_REGISTRY_JSON` and per-model overrides are available inside the container.
+
 ### Model Catalog
 
 The backend exposes the available model list from environment-backed config.
