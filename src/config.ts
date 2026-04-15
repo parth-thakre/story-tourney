@@ -10,14 +10,14 @@ loadEnv({ path: path.join(APP_ROOT, ".env") });
 const DEFAULT_MODELS = [
   {
     modelKey: "sonnet",
-    displayName: "Anthropic Sonnet",
+    displayName: "claude-sonnet-4.6",
     modelId: "claude-sonnet-4.6",
     providerModelId: "anthropic/claude-sonnet-4.6",
     providerOrder: ["google-vertex/us-east5"],
   },
   {
     modelKey: "gpt",
-    displayName: "OpenAI GPT",
+    displayName: "gpt-5.4",
     modelId: "gpt-5.4",
     providerModelId: "openai/gpt-5.4",
     providerOrder: ["azure"],
@@ -31,7 +31,7 @@ const DEFAULT_MODELS = [
   },
   {
     modelKey: "kimi-k25",
-    displayName: "Kimi K2.5",
+    displayName: "kimi-k2-0905",
     modelId: "kimi-k2-0905",
     providerModelId: "moonshotai/kimi-k2-0905",
     providerOrder: ["groq"],
@@ -102,6 +102,12 @@ function buildModelConfig(model: z.infer<typeof modelDefinitionSchema>): ModelRe
   const apiKey = process.env.OPENROUTER_API_KEY ?? process.env[`${prefix}_API_KEY`] ?? null;
   const siteUrl = process.env.OPENROUTER_SITE_URL ?? process.env[`${prefix}_SITE_URL`] ?? null;
   const appName = process.env.OPENROUTER_APP_NAME ?? process.env[`${prefix}_APP_NAME`] ?? null;
+  const resolvedProviderModelId = process.env[`${prefix}_MODEL_ID`] ?? model.providerModelId;
+  const resolvedModelId =
+    process.env[`${prefix}_MODEL_ID_SHORT`] ??
+    model.modelId ??
+    resolvedProviderModelId.split("/").pop() ??
+    resolvedProviderModelId;
   const providerOrder = (process.env[`${prefix}_PROVIDER_ORDER`] ?? (model.providerOrder ?? []).join(","))
     .split(",")
     .map((value) => value.trim())
@@ -109,10 +115,10 @@ function buildModelConfig(model: z.infer<typeof modelDefinitionSchema>): ModelRe
 
   return {
     modelKey: model.modelKey,
-    displayName: process.env[`${prefix}_DISPLAY_NAME`] ?? model.displayName,
-    modelId: process.env[`${prefix}_MODEL_ID_SHORT`] ?? model.modelId ?? model.providerModelId,
+    displayName: process.env[`${prefix}_DISPLAY_NAME`] ?? resolvedModelId,
+    modelId: resolvedModelId,
     provider: apiKey ? "openrouter" : "mock",
-    providerModelId: process.env[`${prefix}_MODEL_ID`] ?? model.providerModelId,
+    providerModelId: resolvedProviderModelId,
     providerOrder,
     apiKey,
     siteUrl,

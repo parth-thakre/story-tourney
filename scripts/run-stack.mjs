@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,6 +17,9 @@ if (mode !== "dev" && mode !== "start") {
 const scriptName = mode === "dev" ? "dev" : "start";
 const children = [];
 let shuttingDown = false;
+let requestedExitCode = 0;
+const savedTerminalState = captureTerminalState();
+let terminalRestored = false;
 
 function runProcess(name, args, extraEnv = {}, cwd = repoRoot) {
   const command = process.platform === "win32" ? shellCommand : npmCommand;
@@ -28,7 +31,7 @@ function runProcess(name, args, extraEnv = {}, cwd = repoRoot) {
   const child = spawn(command, spawnArgs, {
     cwd,
     env: { ...process.env, ...extraEnv },
-    stdio: "inherit",
+    stdio: ["ignore", "inherit", "inherit"],
   });
 
   child.on("exit", (code, signal) => {
@@ -59,8 +62,28 @@ function shutdown(exitCode = 0) {
   }
 
   shuttingDown = true;
+  requestedExitCode = exitCode;
+  let remainingChildren = children.filter((child) => child.exitCode === null && child.signalCode === null).length;
+
+  if (remainingChildren === 0) {
+    restoreTerminalState();
+    process.exit(requestedExitCode);
+  }
+
+  const maybeExit = () => {
+    remainingChildren -= 1;
+    if (remainingChildren <= 0) {
+      restoreTerminalState();
+      process.exit(requestedExitCode);
+    }
+  };
+
   for (const child of children) {
-    if (!child.killed) {
+    if (child.exitCode === null && child.signalCode === null) {
+      child.once("exit", maybeExit);
+    }
+
+    if (!child.killed && child.exitCode === null && child.signalCode === null) {
       child.kill("SIGTERM");
     }
   }
@@ -72,12 +95,45 @@ function shutdown(exitCode = 0) {
       }
     }
   }, 5_000).unref();
+}
 
-  process.exit(exitCode);
+function captureTerminalState() {
+  if (process.platform === "win32" || !process.stdin.isTTY) {
+    return null;
+  }
+
+  const result = spawnSync("stty", ["-g"], {
+    stdio: ["inherit", "pipe", "ignore"],
+    encoding: "utf8",
+  });
+
+  if (result.error || result.status !== 0) {
+    return null;
+  }
+
+  return result.stdout.trim() || null;
+}
+
+function restoreTerminalState() {
+  if (terminalRestored || process.platform === "win32" || !process.stdin.isTTY) {
+    return;
+  }
+
+  terminalRestored = true;
+
+  if (savedTerminalState) {
+    const result = spawnSync("stty", [savedTerminalState], { stdio: "inherit" });
+    if (!result.error && result.status === 0) {
+      return;
+    }
+  }
+
+  spawnSync("stty", ["sane"], { stdio: "inherit" });
 }
 
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
+process.on("exit", restoreTerminalState);
 
 runProcess("backend", ["run", `${scriptName}:backend`], {
   HOST: process.env.HOST ?? "127.0.0.1",
