@@ -15,25 +15,28 @@ const tests = [
     body: {
       model: "openai/gpt-5.4",
       messages: [{ role: "user", content: 'Return valid JSON only: {"ok":true}' }],
-      provider: { order: ["azure"], require_parameters: true, data_collection: "deny", zdr: true },
+      provider: { order: ["azure"], data_collection: "deny", zdr: true },
       response_format: { type: "json_object" },
     },
   },
   {
-    name: "azure+json",
+    name: "azure+json+reasoning",
     body: {
       model: "openai/gpt-5.4",
-      messages: [{ role: "user", content: 'Return valid JSON only: {"ok":true}' }],
-      provider: { order: ["azure"], require_parameters: true },
+      messages: [{ role: "system", content: "TASK:generation" }, { role: "user", content: 'Return valid JSON only: {"ok":true}' }],
+      provider: { order: ["azure"], data_collection: "deny", zdr: true },
       response_format: { type: "json_object" },
+      reasoning: { enabled: true },
     },
   },
   {
-    name: "azure basic",
+    name: "azure+json+system+temp",
     body: {
       model: "openai/gpt-5.4",
-      messages: [{ role: "user", content: 'Say ok in JSON: {"ok":true}' }],
-      provider: { order: ["azure"] },
+      messages: [{ role: "system", content: "TASK:generation" }, { role: "user", content: 'Return valid JSON only: {"ok":true}' }],
+      provider: { order: ["azure"], data_collection: "deny", zdr: true },
+      response_format: { type: "json_object" },
+      temperature: 1,
     },
   },
   {
@@ -41,7 +44,7 @@ const tests = [
     body: {
       model: "openai/gpt-5.4",
       messages: [{ role: "user", content: 'Return valid JSON only: {"ok":true}' }],
-      provider: { require_parameters: true, data_collection: "deny", zdr: true },
+      provider: { data_collection: "deny", zdr: true },
       response_format: { type: "json_object" },
     },
   },

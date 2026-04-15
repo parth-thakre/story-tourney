@@ -86,7 +86,7 @@ export class OpenRouterAdapter implements ModelAdapter {
     if (this.isGpt54()) {
       return {
         ...base,
-        reasoning: { enabled: true },
+        response_format: { type: "json_object" },
       };
     }
 

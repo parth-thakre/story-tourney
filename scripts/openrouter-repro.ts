@@ -35,7 +35,7 @@ Return this JSON schema:
 }`;
 
 const targets = [
-  { name: "gpt", model: "openai/gpt-5.4", provider: ["azure"] },
+  { name: "gpt", model: "openai/gpt-5.4", provider: ["azure"], useReasoning: false },
   { name: "glm", model: "z-ai/glm-5", provider: ["venice/fp8"] },
 ];
 
@@ -54,14 +54,13 @@ async function run() {
           { role: "user", content: prompt },
         ],
         temperature: 0.9,
-        reasoning: { enabled: true },
         provider: {
           order: target.provider,
-          require_parameters: true,
           data_collection: "deny",
           zdr: true,
         },
         response_format: { type: "json_object" },
+        ...(target.useReasoning ? { reasoning: { enabled: true } } : {}),
       }),
     });
 

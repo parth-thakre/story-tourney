@@ -20,21 +20,21 @@ async function run() {
   const models = getModelRegistry();
 
   for (const model of models) {
-    const body = {
-      model: model.providerModelId,
-      messages: [
-        { role: "system", content: "Return valid JSON only. No markdown fences. No <think> tags." },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.7,
-      provider: {
-        order: model.providerOrder,
-        require_parameters: true,
-        data_collection: "deny",
-        zdr: true,
-      },
-      response_format: { type: "json_object" },
-    };
+      const body = {
+        model: model.providerModelId,
+        messages: [
+          { role: "system", content: "Return valid JSON only. No markdown fences. No <think> tags." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        provider: {
+          order: model.providerOrder,
+          data_collection: "deny",
+          zdr: true,
+        },
+        response_format: { type: "json_object" },
+        ...(model.providerModelId === "openai/gpt-5.4" ? {} : { reasoning: { enabled: true } }),
+      };
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
