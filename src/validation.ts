@@ -54,7 +54,7 @@ const reviewItemSchema = z.object({
 });
 
 export const reviewOutputSchema = z.object({
-  reviews: z.array(reviewItemSchema).length(3),
+  reviews: z.array(reviewItemSchema).min(1).max(MAX_TOURNAMENT_MODELS - 1),
 });
 
 export const revisionOutputSchema = z.object({
@@ -75,6 +75,22 @@ export const rankingOutputSchema = z.object({
   ranking: z.array(rankingItemSchema).min(MIN_TOURNAMENT_MODELS).max(MAX_TOURNAMENT_MODELS),
   winner_callout: z.string().min(1),
 });
+
+export function validateReviewOutputCount(value: unknown, expectedCount: number) {
+  const parsed = reviewOutputSchema.parse(value);
+  if (parsed.reviews.length !== expectedCount) {
+    throw new Error(`Review output must contain exactly ${expectedCount} review item(s)`);
+  }
+  return parsed;
+}
+
+export function validateRankingOutputCount(value: unknown, expectedCount: number) {
+  const parsed = rankingOutputSchema.parse(value);
+  if (parsed.ranking.length !== expectedCount) {
+    throw new Error(`Ranking output must contain exactly ${expectedCount} ranking item(s)`);
+  }
+  return parsed;
+}
 
 export type GenerationOutput = z.infer<typeof generationOutputSchema>;
 export type ReviewOutput = z.infer<typeof reviewOutputSchema>;

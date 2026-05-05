@@ -12,6 +12,13 @@ let shuttingDown = false;
 app.disable("x-powered-by");
 app.use(express.json({ limit: "2mb" }));
 
+function formatErrorForLog(error: unknown) {
+  if (error instanceof Error) {
+    return error.stack ?? error.message;
+  }
+  return String(error);
+}
+
 app.get("/health", (_req, res) => {
   res.status(shuttingDown ? 503 : 200).json({ ok: !shuttingDown });
 });
@@ -47,7 +54,7 @@ app.post("/api/tournaments", async (req, res, next) => {
     });
 
     void startTournamentRun(tournament.id).catch((error) => {
-      console.error("Tournament run failed", error);
+      console.error(`Tournament run failed: ${formatErrorForLog(error)}`);
     });
 
     res.status(201).json(getTournamentView(tournament.id));
@@ -72,7 +79,7 @@ app.post("/api/tournaments/:id/retry", async (req, res, next) => {
   try {
     retryTournamentSchema.parse(req.body ?? {});
     void retryTournamentRun(req.params.id).catch((error) => {
-      console.error("Tournament retry failed", error);
+      console.error(`Tournament retry failed: ${formatErrorForLog(error)}`);
     });
     res.json(getTournamentView(req.params.id));
   } catch (error) {
