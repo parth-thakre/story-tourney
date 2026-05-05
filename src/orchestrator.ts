@@ -24,9 +24,10 @@ import {
   RankingOutput,
   rankingOutputSchema,
   ReviewOutput,
-  reviewOutputSchema,
   RevisionOutput,
   revisionOutputSchema,
+  validateRankingOutputCount,
+  validateReviewOutputCount,
 } from "./validation";
 import { nowIso, shuffleWithSeed, truncate, wordCount } from "./utils";
 
@@ -222,7 +223,9 @@ async function runReviewPhase(tournament: Tournament, modelKeys: ModelKey[]) {
         prompt,
         system: "TASK:review",
         temperature: 0.2,
-        schema: reviewOutputSchema,
+        schema: {
+          parse: (value) => validateReviewOutputCount(value, packet.length),
+        },
       });
       for (const review of result.reviews) {
         const source = packet.find((entry) => entry.label === review.story_label);
@@ -338,7 +341,7 @@ async function runRankingPhase(tournament: Tournament, modelKeys: ModelKey[]) {
         system: "TASK:ranking",
         temperature: 0.2,
         schema: {
-          parse: validateRankingOutput,
+          parse: (value) => validateRankingOutput(validateRankingOutputCount(value, packet.length)),
         },
       });
       for (const item of result.ranking) {

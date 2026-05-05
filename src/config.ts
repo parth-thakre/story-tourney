@@ -46,7 +46,7 @@ const modelDefinitionSchema = z.object({
   providerOrder: z.array(z.string().trim().min(1)).optional(),
 });
 
-const modelRegistrySchema = z.array(modelDefinitionSchema).min(4).superRefine((models, ctx) => {
+const modelRegistrySchema = z.array(modelDefinitionSchema).min(2).superRefine((models, ctx) => {
   const seen = new Set<string>();
   models.forEach((model, index) => {
     if (seen.has(model.modelKey)) {

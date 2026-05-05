@@ -70,8 +70,7 @@ function reviewLabelScore(label: string, story: string, reviewer: string) {
 }
 
 function mockReview(prompt: string): ReviewOutput {
-  const lines = prompt.split(/\n+/);
-  const storyEntries = lines.filter((line) => /^Story \d+\s*\|\s*Title:/.test(line));
+  const storyEntries = prompt.match(/Story \d+:\nTitle:[\s\S]*?(?=\n\nStory \d+:|$)/g) ?? [];
   const reviews = storyEntries.map((entry, index) => {
     const label = `Story ${index + 1}`;
     const scoreSeed = reviewLabelScore(label, entry, prompt);
