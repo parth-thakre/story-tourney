@@ -31,6 +31,29 @@ export const retryTournamentSchema = z.object({
   modelKey: z.string().trim().min(1).optional(),
 });
 
+export const updateApiKeySchema = z.object({
+  apiKey: z.string().trim().min(1).nullable(),
+});
+
+export const updateModelsSchema = z.object({
+  models: z
+    .array(
+      z.object({
+        modelKey: z.string().trim().min(1),
+        displayName: z.string().trim().min(1),
+        modelId: z.string().trim().min(1).optional(),
+        providerModelId: z.string().trim().min(1),
+        providerOrder: z.array(z.string().trim().min(1)).optional(),
+      })
+    )
+    .min(MIN_TOURNAMENT_MODELS)
+    .max(MAX_TOURNAMENT_MODELS)
+    .refine((models) => uniqueStrings(models.map((model) => model.modelKey)), { message: "models must be unique" })
+    .refine((models) => uniqueStrings(models.map((model) => model.providerModelId)), {
+      message: "providerModelId values must be unique",
+    }),
+});
+
 export const generationOutputSchema = z.object({
   title: z.string().min(1),
   story: z.string().min(1),

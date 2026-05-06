@@ -1,10 +1,12 @@
 import express from "express";
 import { HOST, PORT, getModelRegistry } from "./config";
-import { createTournamentSchema, retryTournamentSchema } from "./validation";
+import { createTournamentSchema, retryTournamentSchema, updateApiKeySchema, updateModelsSchema } from "./validation";
 import { repository } from "./repository";
 import { getTournamentView, retryTournamentRun, startTournamentRun } from "./orchestrator";
 import { buildMarkdownExport, buildPlainTextExport } from "./export";
 import { ModelKey } from "./types";
+import { getOpenRouterCatalog } from "./modelCatalog";
+import { getSecureSettings, updateSecureSettings } from "./secureSettings";
 
 const app = express();
 let shuttingDown = false;
@@ -25,13 +27,68 @@ app.get("/health", (_req, res) => {
 
 app.get("/api/models", (_req, res) => {
   res.json({
-    models: getModelRegistry().map((model) => ({
-      modelKey: model.modelKey,
-      displayName: model.displayName,
-      provider: model.provider,
-      providerModelId: model.providerModelId,
-    })),
+    models: publicModelRegistry(),
   });
+});
+
+app.get("/api/settings", (_req, res) => {
+  const settings = getSecureSettings();
+  res.json({
+    hasOpenRouterApiKey: Boolean(settings.openrouterApiKey),
+    models: publicModelRegistry(),
+  });
+});
+
+app.put("/api/settings/openrouter-key", (req, res, next) => {
+  try {
+    const parsed = updateApiKeySchema.parse(req.body);
+    const settings = updateSecureSettings((current) => ({
+      ...current,
+      openrouterApiKey: parsed.apiKey,
+    }));
+    res.json({ hasOpenRouterApiKey: Boolean(settings.openrouterApiKey) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put("/api/settings/models", async (req, res, next) => {
+  try {
+    const parsed = updateModelsSchema.parse(req.body);
+    const catalogIds = new Set((await getOpenRouterCatalog()).map((model) => model.providerModelId));
+    const unknownModel = parsed.models.find((model) => !catalogIds.has(model.providerModelId));
+    if (unknownModel) {
+      throw new Error(`Unknown OpenRouter model from models.dev: ${unknownModel.providerModelId}`);
+    }
+    updateSecureSettings((current) => ({
+      ...current,
+      models: parsed.models.map((model) => ({
+        ...model,
+        modelId: model.modelId ?? model.providerModelId.split("/").pop() ?? model.providerModelId,
+        providerOrder: model.providerOrder ?? [],
+      })),
+    }));
+    res.json({ models: publicModelRegistry() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function publicModelRegistry() {
+  return getModelRegistry().map((model) => ({
+    modelKey: model.modelKey,
+    displayName: model.displayName,
+    provider: model.provider,
+    providerModelId: model.providerModelId,
+  }));
+}
+
+app.get("/api/model-catalog/openrouter", async (_req, res, next) => {
+  try {
+    res.json({ models: await getOpenRouterCatalog() });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.post("/api/tournaments", async (req, res, next) => {

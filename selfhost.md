@@ -15,57 +15,24 @@
 
 The supported scripts work on Windows and Linux, including Raspberry Pi systems that can run Docker and Node.
 
-## Environment
+## OpenRouter Setup
 
-If you want live OpenRouter calls:
+Story Tourney no longer requires `.env` for API keys or model configuration.
 
-```bash
-cp .env.example .env
-```
+Start the app, open the setup screen, then:
 
-Then set:
+- paste your OpenRouter API key and save it
+- search the OpenRouter catalog from `models.dev`
+- add 2 to 4 models
+- save the model list
 
-```env
-OPENROUTER_API_KEY=
-```
+The API key and selected model list are stored in encrypted local settings under the backend `data` directory. If no key is saved, the backend uses deterministic mock outputs.
 
-If `.env` is missing or the key is empty, the backend uses deterministic mock outputs.
+## Model Catalog
 
-The self-host scripts load `.env` automatically before starting Docker or Tailscale publishing.
+The picker fetches the OpenRouter provider catalog from `models.dev` through the backend. Duplicate model IDs are filtered out before saving, and tournaments accept only unique selected models.
 
-For Docker self-hosting, the backend service also loads the same root `.env` directly through Compose, so `MODEL_REGISTRY_JSON` and per-model overrides are available inside the container.
-
-### Model Catalog
-
-The backend exposes the available model list from environment-backed config.
-
-If `MODEL_REGISTRY_JSON` is unset, the built-in defaults are used:
-
-- `sonnet`
-- `gpt`
-- `glm5`
-- `kimi-k25`
-
-You can override the catalog completely with a JSON array in `.env`:
-
-```env
-MODEL_REGISTRY_JSON=[{"modelKey":"sonnet","displayName":"Anthropic Sonnet","modelId":"claude-sonnet-4.6","providerModelId":"anthropic/claude-sonnet-4.6","providerOrder":["google-vertex/us-east5"]},{"modelKey":"gpt","displayName":"OpenAI GPT","modelId":"gpt-5.4","providerModelId":"openai/gpt-5.4","providerOrder":["azure"]},{"modelKey":"glm5","displayName":"GLM-5","modelId":"glm-5","providerModelId":"z-ai/glm-5","providerOrder":["venice/fp8"]},{"modelKey":"kimi-k25","displayName":"Kimi K2.5","modelId":"kimi-k2-0905","providerModelId":"moonshotai/kimi-k2-0905","providerOrder":["groq"]}]
-```
-
-Rules:
-
-- keep at least 2 models configured
-- tournaments can run with 2 to 4 selected models
-- `modelKey` can be any stable string
-
-Per-model env overrides use the uppercased `modelKey` with non-alphanumeric characters converted to underscores.
-
-Example:
-
-- `gemini-2.5-pro` becomes `GEMINI_2_5_PRO_DISPLAY_NAME`
-- `gemini-2.5-pro` becomes `GEMINI_2_5_PRO_MODEL_ID`
-- `gemini-2.5-pro` becomes `GEMINI_2_5_PRO_API_KEY`
-- `gemini-2.5-pro` becomes `GEMINI_2_5_PRO_PROVIDER_ORDER`
+If no models have been saved yet, the backend exposes built-in defaults so the app can still run in mock mode.
 
 ## Easiest Host Flow
 

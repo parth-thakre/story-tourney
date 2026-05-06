@@ -37,32 +37,92 @@ export default function SetupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-start pt-16 sm:pt-24 px-4 sm:px-6 pb-16">
-      <header className="text-center mb-10">
-        <h1 className="font-serif text-4xl sm:text-5xl font-bold text-zinc-100 tracking-tight">
-          Story Tournament
+    <main className="min-h-screen flex flex-col items-center justify-start px-5 sm:px-8 pb-28">
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <header className="w-full max-w-2xl pt-20 sm:pt-32 mb-16 sm:mb-20">
+
+        {/* Eyebrow */}
+        <p
+          className="text-[10px] uppercase tracking-[0.28em] mb-7 font-medium"
+          style={{ color: "var(--accent-dim)", fontFamily: "var(--font-sans)" }}
+        >
+          Blind literary competition
+        </p>
+
+        {/* Display title */}
+        <h1
+          className="font-serif font-bold leading-[0.88] mb-8"
+          style={{ letterSpacing: "-0.02em" }}
+        >
+          <span
+            className="block italic"
+            style={{
+              fontSize: "clamp(3rem, 9vw, 5rem)",
+              color: "var(--text-2)",
+            }}
+          >
+            Story
+          </span>
+          <span
+            className="block"
+            style={{
+              fontSize: "clamp(3.5rem, 11vw, 6.5rem)",
+              color: "var(--text-1)",
+            }}
+          >
+            Tournament
+          </span>
         </h1>
-        <p className="mt-3 text-zinc-400 font-sans text-base max-w-md mx-auto">
-          Two to four models. One prompt. Blind review. See who writes the best story.
+
+        {/* Gold rule */}
+        <div
+          style={{
+            width: "2.75rem",
+            height: "1.5px",
+            background: "var(--accent)",
+            marginBottom: "1.25rem",
+          }}
+        />
+
+        {/* Standfirst */}
+        <p
+          className="text-[0.9375rem] leading-relaxed"
+          style={{
+            color: "var(--text-3)",
+            fontFamily: "var(--font-sans)",
+            maxWidth: "30rem",
+          }}
+        >
+          Four models. One prompt. Blind peer review, revision, and a ceremonial reveal of who wrote what.
         </p>
       </header>
 
+      {/* ── Error ────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="w-full max-w-2xl mb-6 px-4 py-3 rounded-lg bg-red-950/60 border border-red-800/50 text-red-300 text-sm font-sans">
+        <div
+          className="w-full max-w-2xl mb-6 px-4 py-3 rounded-lg text-sm"
+          style={{
+            background: "oklch(55% 0.175 22 / 0.08)",
+            border: "1px solid oklch(55% 0.175 22 / 0.35)",
+            color: "oklch(70% 0.13 22)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
           {error}
         </div>
       )}
 
+      {/* ── Form ─────────────────────────────────────────────────────────── */}
       <SetupForm onSubmit={handleSubmit} isLoading={isLoading} />
 
-      <div className="mt-12">
-        <Link
-          href="/history"
-          className="text-zinc-500 hover:text-zinc-300 text-sm font-sans underline underline-offset-4 decoration-zinc-600 transition-colors"
-        >
-          View past tournaments
+      {/* ── Footer link ──────────────────────────────────────────────────── */}
+      <div className="mt-14">
+        <Link href="/history" className="back-link" style={{ transform: "none" }}>
+          <span style={{ marginLeft: "0.25rem" }}>View past tournaments</span>
         </Link>
       </div>
+
     </main>
   );
 }

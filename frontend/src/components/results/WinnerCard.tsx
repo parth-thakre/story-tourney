@@ -14,112 +14,199 @@ interface WinnerCardProps {
   modelNames: Record<string, string>;
 }
 
-export default function WinnerCard({ result, story, originalStory, reviews, rankings, modelName, modelNames }: WinnerCardProps) {
+export default function WinnerCard({
+  result,
+  story,
+  originalStory,
+  reviews,
+  rankings,
+  modelName,
+  modelNames,
+}: WinnerCardProps) {
   const [showOriginal, setShowOriginal] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
   return (
     <div className="winner-card">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="placement-badge placement-badge--gold">
-              1st Place
-            </span>
-            <span className="text-zinc-500 font-sans text-sm">
-              {result.bordaPoints} pts · {result.firstPlaceVotes} first-place votes
-            </span>
+      {/* Placement row */}
+      <div className="flex items-center gap-3 mb-5">
+        <span className="placement-badge placement-badge--gold">1st Place</span>
+        <span
+          className="text-sm"
+          style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+        >
+          {result.bordaPoints} pts &middot; {result.firstPlaceVotes} first-place
+          {result.firstPlaceVotes === 1 ? " vote" : " votes"}
+        </span>
+      </div>
+
+      {/* Reveal section */}
+      <div
+        className="flex items-center mb-6"
+        style={{ minHeight: "3rem" }}
+      >
+        {revealed ? (
+          <div className="reveal-author">
+            <span className="reveal-author__name">Written by {modelName}</span>
           </div>
-        </div>
-
-        <div className="reveal-author" onClick={() => setRevealed(true)}>
-          {revealed ? (
-            <span className="reveal-author__name font-serif text-2xl font-bold text-amber-300">
-              Written by {modelName}
-            </span>
-          ) : (
-            <button className="reveal-author__btn" onClick={() => setRevealed(true)}>
-              Reveal Author
-            </button>
-          )}
-        </div>
-
-        <h2 className="font-serif text-2xl font-bold text-zinc-100">{story.title}</h2>
-
-        <div className="prose-content">
-          {story.body.split("\n").map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
-
-        {story.changeSummary && (
-          <div className="mt-4 pt-4 border-t border-zinc-800/60">
-            <h3 className="text-sm text-zinc-400 uppercase tracking-widest font-sans mb-2">What Changed</h3>
-            <p className="text-zinc-300 font-sans text-sm">{story.changeSummary}</p>
-          </div>
+        ) : (
+          <button className="btn-reveal" onClick={() => setRevealed(true)}>
+            Reveal the Author
+          </button>
         )}
+      </div>
 
+      {/* Story title */}
+      <h2
+        className="font-serif text-2xl sm:text-3xl font-bold mb-5 leading-tight"
+        style={{ color: "var(--text-1)" }}
+      >
+        {story.title}
+      </h2>
+
+      {/* Story body */}
+      <div className="prose-content">
+        {story.body.split("\n").filter(Boolean).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+
+      {/* What Changed */}
+      {story.changeSummary && (
+        <div
+          className="mt-6 pt-5"
+          style={{ borderTop: "1px solid var(--border-muted)" }}
+        >
+          <h3
+            className="text-xs uppercase tracking-[0.12em] font-medium mb-2"
+            style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+          >
+            What Changed
+          </h3>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "var(--text-2)", fontFamily: "var(--font-sans)" }}
+          >
+            {story.changeSummary}
+          </p>
+        </div>
+      )}
+
+      {/* Original story toggle */}
+      <div className="mt-5">
         <button
           type="button"
           onClick={() => setShowOriginal(!showOriginal)}
-          className="text-sm text-zinc-500 hover:text-zinc-300 font-sans underline underline-offset-4 decoration-zinc-700 transition-colors text-left"
+          className="text-sm underline underline-offset-4"
+          style={{
+            color: "var(--text-3)",
+            fontFamily: "var(--font-sans)",
+            textDecorationColor: "var(--border)",
+          }}
         >
           {showOriginal ? "Hide" : "Show"} original story
         </button>
 
         {showOriginal && originalStory && (
-          <div className="original-section">
-            <h3 className="text-sm text-zinc-500 uppercase tracking-widest font-sans mb-2">
+          <div className="original-section mt-3">
+            <h3
+              className="text-xs uppercase tracking-[0.12em] font-medium mb-3"
+              style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+            >
               Original — {originalStory.title}
             </h3>
             <div className="prose-content prose-content--dimmed">
-              {originalStory.body.split("\n").map((p, i) => (
+              {originalStory.body.split("\n").filter(Boolean).map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
             </div>
           </div>
         )}
-
-        {reviews.length > 0 && (
-          <FeedbackSummary reviews={reviews} />
-        )}
-
-        {rankings.length > 0 && (
-          <RankingBreakdown rankings={rankings} modelNames={modelNames} />
-        )}
       </div>
+
+      {/* Peer Feedback */}
+      {reviews.length > 0 && <FeedbackSummary reviews={reviews} />}
+
+      {/* Judge Rankings */}
+      {rankings.length > 0 && (
+        <RankingBreakdown rankings={rankings} modelNames={modelNames} />
+      )}
     </div>
   );
 }
 
+const SCORE_LABELS: Record<string, string> = {
+  promptFit: "Prompt Fit",
+  originality: "Originality",
+  coherence: "Coherence",
+  prose: "Prose",
+  emotionalImpact: "Impact",
+};
+
 function FeedbackSummary({ reviews }: { reviews: Review[] }) {
   return (
-    <div className="mt-4 pt-4 border-t border-zinc-800/60">
-      <h3 className="text-sm text-zinc-400 uppercase tracking-widest font-sans mb-3">
+    <div className="mt-6 pt-5" style={{ borderTop: "1px solid var(--border-muted)" }}>
+      <h3
+        className="text-xs uppercase tracking-[0.12em] font-medium mb-3"
+        style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+      >
         Peer Feedback
       </h3>
       <div className="flex flex-col gap-3">
         {reviews.map((review) => (
-          <div key={review.id} className="feedback-item">
-            <div className="flex flex-wrap gap-2 mb-2">
-              <span className="score-pill" title="Prompt Fit">PF: {review.promptFit}</span>
-              <span className="score-pill" title="Originality">O: {review.originality}</span>
-              <span className="score-pill" title="Coherence">C: {review.coherence}</span>
-              <span className="score-pill" title="Prose">P: {review.prose}</span>
-              <span className="score-pill" title="Emotional Impact">EI: {review.emotionalImpact}</span>
+          <div key={review.id} className="feedback-block">
+            {/* Scores */}
+            <div className="score-row">
+              {(
+                [
+                  ["promptFit", review.promptFit],
+                  ["originality", review.originality],
+                  ["coherence", review.coherence],
+                  ["prose", review.prose],
+                  ["emotionalImpact", review.emotionalImpact],
+                ] as [string, number][]
+              ).map(([key, val]) => (
+                <span key={key} className="score-pill">
+                  <span className="score-pill__label">{SCORE_LABELS[key]}</span>
+                  <span className="score-pill__value">{val}</span>
+                </span>
+              ))}
             </div>
-            <p className="text-zinc-300 text-sm font-sans italic">{review.overallComment}</p>
+
+            {/* Comment */}
+            <p
+              className="text-sm italic leading-relaxed mb-2"
+              style={{ color: "var(--text-2)", fontFamily: "var(--font-sans)" }}
+            >
+              {review.overallComment}
+            </p>
+
+            {/* Strengths */}
             {review.strengths.length > 0 && (
-              <div className="mt-1 flex flex-col gap-0.5">
+              <div className="flex flex-col gap-0.5 mt-1">
                 {review.strengths.map((s, i) => (
-                  <span key={i} className="text-emerald-400/80 text-xs font-sans">+ {s}</span>
+                  <span
+                    key={i}
+                    className="text-xs"
+                    style={{ color: "var(--success)", fontFamily: "var(--font-sans)" }}
+                  >
+                    + {s}
+                  </span>
                 ))}
               </div>
             )}
+
+            {/* Weaknesses */}
             {review.weaknesses.length > 0 && (
-              <div className="mt-1 flex flex-col gap-0.5">
+              <div className="flex flex-col gap-0.5 mt-1">
                 {review.weaknesses.map((w, i) => (
-                  <span key={i} className="text-red-400/70 text-xs font-sans">− {w}</span>
+                  <span
+                    key={i}
+                    className="text-xs"
+                    style={{ color: "oklch(65% 0.13 22)", fontFamily: "var(--font-sans)" }}
+                  >
+                    &minus; {w}
+                  </span>
                 ))}
               </div>
             )}

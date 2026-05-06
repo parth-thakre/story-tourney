@@ -1,4 +1,10 @@
-import type { TournamentView, CreateTournamentRequest, ModelRegistryEntry } from "@/types";
+import type {
+  TournamentView,
+  CreateTournamentRequest,
+  ModelRegistryEntry,
+  OpenRouterCatalogModel,
+  SettingsState,
+} from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
@@ -16,6 +22,38 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 
 export async function getModels(): Promise<ModelRegistryEntry[]> {
   const data = await fetchJSON<{ models: ModelRegistryEntry[] }>("/models");
+  return data.models;
+}
+
+export function getSettings(): Promise<SettingsState> {
+  return fetchJSON<SettingsState>("/settings");
+}
+
+export async function saveOpenRouterApiKey(apiKey: string | null): Promise<{ hasOpenRouterApiKey: boolean }> {
+  return fetchJSON<{ hasOpenRouterApiKey: boolean }>("/settings/openrouter-key", {
+    method: "PUT",
+    body: JSON.stringify({ apiKey }),
+  });
+}
+
+export async function getOpenRouterCatalog(): Promise<OpenRouterCatalogModel[]> {
+  const data = await fetchJSON<{ models: OpenRouterCatalogModel[] }>("/model-catalog/openrouter");
+  return data.models;
+}
+
+export async function saveConfiguredModels(models: OpenRouterCatalogModel[]): Promise<ModelRegistryEntry[]> {
+  const data = await fetchJSON<{ models: ModelRegistryEntry[] }>("/settings/models", {
+    method: "PUT",
+    body: JSON.stringify({
+      models: models.map((model) => ({
+        modelKey: model.modelKey,
+        displayName: model.displayName,
+        modelId: model.modelId,
+        providerModelId: model.providerModelId,
+        providerOrder: model.providerOrder,
+      })),
+    }),
+  });
   return data.models;
 }
 

@@ -43,12 +43,12 @@ const phaseOrder = ["generation", "review", "revision", "ranking"] as const;
 const runLocks = new Map<string, Promise<void>>();
 
 function phaseComplete(tournamentId: string, phase: (typeof phaseOrder)[number], modelKeys: ModelKey[]) {
-  return repository.getSuccessfulModelKeys(tournamentId, phase).length >= modelKeys.length;
+  return repository.getCompletedModelKeysForPhase(tournamentId, phase).length >= modelKeys.length;
 }
 
 function pendingModels(tournamentId: string, phase: (typeof phaseOrder)[number], modelKeys: ModelKey[]) {
-  const success = new Set(repository.getSuccessfulModelKeys(tournamentId, phase));
-  return modelKeys.filter((key) => !success.has(key));
+  const completed = new Set(repository.getCompletedModelKeysForPhase(tournamentId, phase));
+  return modelKeys.filter((key) => !completed.has(key));
 }
 
 function buildReviewPacket(tournament: Tournament, reviewerKey: ModelKey) {

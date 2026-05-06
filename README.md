@@ -23,14 +23,6 @@ npm install
 npm --prefix frontend install
 ```
 
-Optional live model config:
-
-```bash
-cp .env.example .env
-```
-
-Set `OPENROUTER_API_KEY` in `.env` if you want live OpenRouter calls. Without it, the backend uses deterministic mock outputs.
-
 Run locally:
 
 ```bash
@@ -41,6 +33,8 @@ Open:
 
 - frontend: `http://localhost:9965`
 - backend: `http://127.0.0.1:9966`
+
+Add your OpenRouter API key and choose 2 to 4 OpenRouter models from the setup screen. The key is stored encrypted under local `data/`; without a saved key, the backend uses deterministic mock outputs.
 
 ## Self-Hosting
 

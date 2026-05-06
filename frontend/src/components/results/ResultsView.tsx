@@ -16,12 +16,16 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
   const [exporting, setExporting] = useState(false);
 
   const { tournament, storyVersions, reviews, finalRankings, results } = data;
-  const modelNames = Object.fromEntries(data.models.map((model) => [model.modelKey, model.displayName])) as Record<string, string>;
+  const modelNames = Object.fromEntries(
+    data.models.map((model) => [model.modelKey, model.displayName])
+  ) as Record<string, string>;
   const originalStories = storyVersions.filter((s) => s.round === "original");
   const revisedStories = storyVersions.filter((s) => s.round === "revised");
 
   const sortedResults = [...results].sort((a, b) => a.finalRank - b.finalRank);
-  const resultGroups = sortedResults.reduce<Array<{ rank: number; items: typeof sortedResults }>>((groups, result) => {
+  const resultGroups = sortedResults.reduce<
+    Array<{ rank: number; items: typeof sortedResults }>
+  >((groups, result) => {
     const existing = groups.find((group) => group.rank === result.finalRank);
     if (existing) {
       existing.items.push(result);
@@ -56,17 +60,28 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
   }
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 sm:px-6 pt-10 pb-16">
+    <main
+      className="min-h-screen flex flex-col items-center px-4 sm:px-6 pt-10 pb-20"
+    >
       <header className="w-full max-w-3xl mb-10">
-        <p className="text-amber-400 font-sans text-sm uppercase tracking-widest mb-2">
+        <p
+          className="text-xs uppercase tracking-[0.14em] font-medium mb-3"
+          style={{ color: "var(--accent)", fontFamily: "var(--font-sans)" }}
+        >
           Tournament Complete
         </p>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-zinc-100 leading-snug">
+        <h1
+          className="font-serif text-3xl sm:text-4xl font-bold leading-snug"
+          style={{ color: "var(--text-1)" }}
+        >
           {tournament.prompt}
         </h1>
         {tournament.genreHint && (
-          <p className="text-zinc-500 font-sans text-sm mt-1">
-            Style: {tournament.genreHint}
+          <p
+            className="text-sm mt-2"
+            style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+          >
+            {tournament.genreHint}
           </p>
         )}
       </header>
@@ -75,15 +90,19 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
         {resultGroups.map((group, groupIndex) => (
           <div key={`rank-${group.rank}`} className="flex flex-col gap-6">
             {group.items.length > 1 && (
-              <div className="rounded-xl border border-amber-800/40 bg-amber-950/20 px-4 py-3">
-                <p className="font-sans text-xs uppercase tracking-[0.24em] text-amber-400">
+              <div className="tie-banner">
+                <p
+                  className="text-xs uppercase tracking-[0.18em]"
+                  style={{ color: "var(--accent)", fontFamily: "var(--font-sans)" }}
+                >
                   Tie for {ordinal(group.rank)} Place
                 </p>
               </div>
             )}
             {group.items.map((result) => {
               const revisedStory = revisedStories.find((s) => s.id === result.storyVersionId);
-              const originalStory = originalStories.find((s) => s.modelKey === revisedStory?.modelKey) ?? null;
+              const originalStory =
+                originalStories.find((s) => s.modelKey === revisedStory?.modelKey) ?? null;
               if (!revisedStory) return null;
 
               const storyReviews = reviews.filter((r) =>
@@ -125,28 +144,23 @@ export default function ResultsView({ data, onNewPrompt, onRunAgain }: ResultsVi
         ))}
       </div>
 
-      <div className="w-full max-w-3xl mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <button onClick={onRunAgain} className="btn-primary">
-          Run Again
-        </button>
-        <button onClick={onNewPrompt} className="btn-secondary">
-          Try New Prompt
-        </button>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleExport("md")}
-            disabled={exporting}
-            className="btn-ghost"
-          >
-            {exporting ? "Exporting..." : "Export Markdown"}
+      {/* Actions */}
+      <div className="w-full max-w-3xl mt-14 pt-8" style={{ borderTop: "1px solid var(--border-muted)" }}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button onClick={onRunAgain} className="btn-primary">
+            Run Again
           </button>
-          <button
-            onClick={() => handleExport("txt")}
-            disabled={exporting}
-            className="btn-ghost"
-          >
-            Export Text
+          <button onClick={onNewPrompt} className="btn-secondary">
+            Try New Prompt
           </button>
+          <div className="flex gap-2">
+            <button onClick={() => handleExport("md")} disabled={exporting} className="btn-ghost">
+              {exporting ? "Exporting…" : "Export Markdown"}
+            </button>
+            <button onClick={() => handleExport("txt")} disabled={exporting} className="btn-ghost">
+              Export Text
+            </button>
+          </div>
         </div>
       </div>
     </main>

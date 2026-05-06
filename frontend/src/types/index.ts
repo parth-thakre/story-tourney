@@ -120,6 +120,25 @@ export interface ModelRegistryEntry {
   providerModelId: string;
 }
 
+export interface OpenRouterCatalogModel {
+  modelKey: ModelKey;
+  displayName: string;
+  modelId: string;
+  providerModelId: string;
+  providerOrder: string[];
+  family: string | null;
+  contextLength: number | null;
+  inputCost: number | null;
+  outputCost: number | null;
+  releaseDate: string | null;
+  lastUpdated: string | null;
+}
+
+export interface SettingsState {
+  hasOpenRouterApiKey: boolean;
+  models: ModelRegistryEntry[];
+}
+
 export interface CreateTournamentRequest {
   prompt: string;
   genreHint?: string | null;

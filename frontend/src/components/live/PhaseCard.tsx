@@ -15,80 +15,178 @@ interface PhaseCardProps {
   retrying: boolean;
 }
 
-const ACCENT_MAP: Record<string, string> = {
-  generation: "border-teal-600 text-teal-400",
-  review: "border-orange-600 text-orange-400",
-  revision: "border-blue-600 text-blue-400",
-  ranking: "border-zinc-500 text-zinc-300",
-  reveal: "border-amber-500 text-amber-400",
+// Border + text color for each phase when active
+const PHASE_CIRCLE: Record<string, { border: string; text: string; bg: string }> = {
+  generation: {
+    border: "var(--phase-teal)",
+    text: "var(--phase-teal)",
+    bg: "oklch(67% 0.14 189 / 0.1)",
+  },
+  review: {
+    border: "var(--phase-orange)",
+    text: "var(--phase-orange)",
+    bg: "oklch(70% 0.15 43 / 0.1)",
+  },
+  revision: {
+    border: "var(--phase-blue)",
+    text: "var(--phase-blue)",
+    bg: "oklch(66% 0.15 260 / 0.1)",
+  },
+  ranking: {
+    border: "var(--text-2)",
+    text: "var(--text-2)",
+    bg: "var(--surface-raised)",
+  },
+  reveal: {
+    border: "var(--phase-amber)",
+    text: "var(--phase-amber)",
+    bg: "oklch(75% 0.15 80 / 0.1)",
+  },
 };
 
-const ACCENT_BG: Record<string, string> = {
-  generation: "bg-teal-950/40",
-  review: "bg-orange-950/40",
-  revision: "bg-blue-950/40",
-  ranking: "bg-zinc-800/40",
-  reveal: "bg-amber-950/40",
-};
-
-export default function PhaseCard({ number, label, phaseKey, status, progress, data, onRetry, retrying }: PhaseCardProps) {
+export default function PhaseCard({
+  number,
+  label,
+  phaseKey,
+  status,
+  progress,
+  data,
+  onRetry,
+  retrying,
+}: PhaseCardProps) {
   const [expanded, setExpanded] = useState(status !== "pending");
 
   const progressText = `${Math.min(progress.complete, progress.total)}/${progress.total}`;
+  const phase = PHASE_CIRCLE[phaseKey] ?? PHASE_CIRCLE.ranking;
 
-  const accent = ACCENT_MAP[phaseKey] ?? "";
-  const accentBg = ACCENT_BG[phaseKey] ?? "";
+  // Circle styles per status
+  let circleStyle: React.CSSProperties;
+  if (status === "completed") {
+    circleStyle = {
+      background: "oklch(70% 0.145 148 / 0.12)",
+      border: "2px solid oklch(50% 0.10 148 / 0.7)",
+      color: "var(--success)",
+    };
+  } else if (status === "active") {
+    circleStyle = {
+      background: phase.bg,
+      border: `2px solid ${phase.border}`,
+      color: phase.text,
+    };
+  } else if (status === "failed") {
+    circleStyle = {
+      background: "oklch(55% 0.175 22 / 0.1)",
+      border: "2px solid oklch(50% 0.14 22 / 0.6)",
+      color: "var(--error)",
+    };
+  } else {
+    circleStyle = {
+      background: "var(--bg)",
+      border: "2px solid var(--border-muted)",
+      color: "var(--text-3)",
+    };
+  }
 
   return (
     <div
-      className={`phase-card ${status === "active" ? "phase-card--active" : ""} ${status === "completed" ? "phase-card--completed" : ""} ${status === "failed" ? "phase-card--failed" : ""}`}
+      className={`phase-card ${
+        status === "active" ? "phase-card--active" : ""
+      } ${status === "completed" ? "phase-card--completed" : ""} ${
+        status === "failed" ? "phase-card--failed" : ""
+      }`}
     >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between gap-4 py-4 px-5"
+        style={{ background: "none" }}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3.5">
+          {/* Phase number circle */}
           <span
-            className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold font-sans border-2 ${status === "completed" ? "bg-emerald-900/60 border-emerald-600 text-emerald-300" : status === "active" ? `${accentBg} ${accent} border-current` : status === "failed" ? "bg-red-950/60 border-red-600 text-red-400" : "bg-zinc-900 border-zinc-700 text-zinc-500"}`}
+            className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold shrink-0"
+            style={{
+              fontFamily: "var(--font-sans)",
+              ...circleStyle,
+            }}
           >
             {status === "completed" ? "✓" : status === "failed" ? "!" : number}
           </span>
-          <span className={`font-serif text-lg font-semibold ${status === "pending" ? "text-zinc-600" : "text-zinc-100"}`}>
+
+          {/* Phase label */}
+          <span
+            className="font-serif text-base font-semibold"
+            style={{
+              color: status === "pending" ? "var(--text-3)" : "var(--text-1)",
+            }}
+          >
             {label}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {progress.failed > 0 && (
-            <span className="text-xs text-red-400 font-sans">
+            <span
+              className="text-xs"
+              style={{ color: "var(--error)", fontFamily: "var(--font-sans)" }}
+            >
               {progress.failed} failed
             </span>
           )}
-          <span className={`font-sans text-sm tabular-nums ${status === "pending" ? "text-zinc-700" : status === "failed" ? "text-red-400" : "text-zinc-400"}`}>
+          <span
+            className="text-sm tabular-nums"
+            style={{
+              fontFamily: "var(--font-sans)",
+              color:
+                status === "pending"
+                  ? "var(--text-3)"
+                  : status === "failed"
+                  ? "var(--error)"
+                  : "var(--text-2)",
+            }}
+          >
             {progressText}
           </span>
           {status === "active" && <span className="pulse-dot" />}
-          <span className={`text-xs font-sans ${expanded ? "text-zinc-400" : "text-zinc-600"}`}>
+          <span
+            className="text-xs"
+            style={{
+              fontFamily: "var(--font-sans)",
+              color: expanded ? "var(--text-2)" : "var(--text-3)",
+            }}
+          >
             {expanded ? "▲" : "▼"}
           </span>
         </div>
       </button>
 
       {expanded && phaseKey !== "reveal" && (
-        <div className="px-5 pb-4 border-t border-zinc-800/60">
-          <PhaseContent phaseKey={phaseKey as PhaseName} data={data} onRetry={onRetry} retrying={retrying} />
+        <div className="px-5 pb-4" style={{ borderTop: "1px solid var(--border-muted)" }}>
+          <PhaseContent
+            phaseKey={phaseKey as PhaseName}
+            data={data}
+            onRetry={onRetry}
+            retrying={retrying}
+          />
         </div>
       )}
 
       {expanded && phaseKey === "reveal" && (
-        <div className="px-5 pb-4 border-t border-zinc-800/60">
+        <div className="px-5 pb-4" style={{ borderTop: "1px solid var(--border-muted)" }}>
           {data.results.length > 0 ? (
-            <p className="text-amber-400 font-sans text-sm pt-3">
+            <p
+              className="text-sm pt-3"
+              style={{ color: "var(--phase-amber)", fontFamily: "var(--font-sans)" }}
+            >
               Results ready — scroll down.
             </p>
           ) : (
-            <p className="text-zinc-500 font-sans text-sm pt-3">Waiting for results...</p>
+            <p
+              className="text-sm pt-3"
+              style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+            >
+              Waiting for results…
+            </p>
           )}
         </div>
       )}
@@ -111,9 +209,11 @@ function PhaseContent({
 
   if (phaseKey === "generation") {
     return (
-      <div className="flex flex-col gap-2 pt-3">
+      <div className="flex flex-col gap-1.5 pt-3">
         {models.map((model, i) => {
-          const story = data.storyVersions.find((s) => s.modelKey === model.modelKey && s.round === "original");
+          const story = data.storyVersions.find(
+            (s) => s.modelKey === model.modelKey && s.round === "original"
+          );
           const call = latestCall(data.providerCalls, "generation", model.modelKey);
           const attempts = attemptCount(data.providerCalls, "generation", model.modelKey);
           const done = !!story;
@@ -124,7 +224,15 @@ function PhaseContent({
               label={`Story ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
-              detail={done ? `${story.title} · ${story.wordCount} words` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
+              detail={
+                done
+                  ? `${story.title} · ${story.wordCount} words`
+                  : failed
+                  ? call!.error ?? "Error"
+                  : call?.status === "pending"
+                  ? "Running…"
+                  : undefined
+              }
               call={call}
               attempts={attempts}
               onRetry={onRetry}
@@ -138,7 +246,7 @@ function PhaseContent({
 
   if (phaseKey === "review") {
     return (
-      <div className="flex flex-col gap-2 pt-3">
+      <div className="flex flex-col gap-1.5 pt-3">
         {models.map((model, i) => {
           const reviews = data.reviews.filter((r) => r.reviewerModelKey === model.modelKey);
           const call = latestCall(data.providerCalls, "review", model.modelKey);
@@ -151,7 +259,15 @@ function PhaseContent({
               label={`Reviewer ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
-              detail={done ? `Reviewed ${reviews.length} stories` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
+              detail={
+                done
+                  ? `Reviewed ${reviews.length} stories`
+                  : failed
+                  ? call!.error ?? "Error"
+                  : call?.status === "pending"
+                  ? "Running…"
+                  : undefined
+              }
               call={call}
               attempts={attempts}
               onRetry={onRetry}
@@ -165,9 +281,11 @@ function PhaseContent({
 
   if (phaseKey === "revision") {
     return (
-      <div className="flex flex-col gap-2 pt-3">
+      <div className="flex flex-col gap-1.5 pt-3">
         {models.map((model, i) => {
-          const revision = data.storyVersions.find((s) => s.modelKey === model.modelKey && s.round === "revised");
+          const revision = data.storyVersions.find(
+            (s) => s.modelKey === model.modelKey && s.round === "revised"
+          );
           const call = latestCall(data.providerCalls, "revision", model.modelKey);
           const attempts = attemptCount(data.providerCalls, "revision", model.modelKey);
           const done = !!revision;
@@ -178,7 +296,15 @@ function PhaseContent({
               label={`Revision ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
-              detail={done ? `${revision.title} · ${revision.wordCount} words` : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
+              detail={
+                done
+                  ? `${revision.title} · ${revision.wordCount} words`
+                  : failed
+                  ? call!.error ?? "Error"
+                  : call?.status === "pending"
+                  ? "Running…"
+                  : undefined
+              }
               call={call}
               attempts={attempts}
               onRetry={onRetry}
@@ -192,9 +318,11 @@ function PhaseContent({
 
   if (phaseKey === "ranking") {
     return (
-      <div className="flex flex-col gap-2 pt-3">
+      <div className="flex flex-col gap-1.5 pt-3">
         {models.map((model, i) => {
-          const rankings = data.finalRankings.filter((r) => r.reviewerModelKey === model.modelKey);
+          const rankings = data.finalRankings.filter(
+            (r) => r.reviewerModelKey === model.modelKey
+          );
           const call = latestCall(data.providerCalls, "ranking", model.modelKey);
           const attempts = attemptCount(data.providerCalls, "ranking", model.modelKey);
           const done = rankings.length > 0;
@@ -205,7 +333,15 @@ function PhaseContent({
               label={`Judge ${i + 1} · ${model.displayName}`}
               done={done}
               failed={failed}
-              detail={done ? "Ranked all stories" : failed ? call!.error ?? "Error" : call?.status === "pending" ? "Running..." : undefined}
+              detail={
+                done
+                  ? "Ranked all stories"
+                  : failed
+                  ? call!.error ?? "Error"
+                  : call?.status === "pending"
+                  ? "Running…"
+                  : undefined
+              }
               call={call}
               attempts={attempts}
               onRetry={onRetry}
@@ -220,7 +356,11 @@ function PhaseContent({
   return null;
 }
 
-function latestCall(calls: ProviderCall[], phase: PhaseName, modelKey: string): ProviderCall | undefined {
+function latestCall(
+  calls: ProviderCall[],
+  phase: PhaseName,
+  modelKey: string
+): ProviderCall | undefined {
   const matching = calls.filter((c) => c.phase === phase && c.modelKey === modelKey);
   if (matching.length === 0) return undefined;
   return matching.reduce((a, b) => (b.attempt > a.attempt ? b : a));
@@ -253,33 +393,78 @@ function ModelCallRow({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between py-2 px-3 rounded-md bg-zinc-900/50">
-        <div className="flex items-center gap-2">
-          {done && <span className="text-emerald-400 text-sm">✓</span>}
-          {failed && <span className="text-red-400 text-sm">✗</span>}
-          {!done && !failed && <span className="text-zinc-600 text-sm">○</span>}
-          <span className="font-sans text-sm text-zinc-300">{label}</span>
+      <div
+        className="flex items-center justify-between py-2 px-3 rounded"
+        style={{
+          background: failed ? "oklch(55% 0.175 22 / 0.04)" : "var(--bg)",
+          border: `1px solid ${failed ? "oklch(50% 0.14 22 / 0.2)" : "var(--border-muted)"}`,
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          {done && (
+            <span className="text-xs shrink-0" style={{ color: "var(--success)" }}>
+              ✓
+            </span>
+          )}
+          {failed && (
+            <span className="text-xs shrink-0" style={{ color: "var(--error)" }}>
+              ✗
+            </span>
+          )}
+          {!done && !failed && (
+            <span
+              className="text-xs shrink-0"
+              style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+            >
+              ○
+            </span>
+          )}
+          <span
+            className="text-sm"
+            style={{ color: "var(--text-2)", fontFamily: "var(--font-sans)" }}
+          >
+            {label}
+          </span>
         </div>
+
         <div className="flex items-center gap-3">
           {detail && (
-            <span className={`font-sans text-xs ${failed ? "text-red-400" : "text-zinc-500"}`}>
+            <span
+              className="text-xs"
+              style={{
+                color: failed ? "var(--error)" : "var(--text-3)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
               {detail}
             </span>
           )}
           {attempts > 1 && (
-            <span className="font-sans text-[11px] text-amber-400">
+            <span
+              className="text-[11px]"
+              style={{ color: "var(--accent-dim)", fontFamily: "var(--font-sans)" }}
+            >
               Attempt {attempts}
             </span>
           )}
           {failed && (
-            <button onClick={onRetry} disabled={retrying} className="text-xs text-red-400 hover:text-red-300 font-sans underline">
-              {retrying ? "Retrying..." : "Retry"}
+            <button
+              onClick={onRetry}
+              disabled={retrying}
+              className="text-xs underline"
+              style={{ color: "var(--error)", fontFamily: "var(--font-sans)" }}
+            >
+              {retrying ? "Retrying…" : "Retry"}
             </button>
           )}
           {call && (
             <button
               onClick={() => setShowLog(!showLog)}
-              className="text-xs text-zinc-500 hover:text-zinc-300 font-sans"
+              className="text-xs"
+              style={{
+                color: showLog ? "var(--text-2)" : "var(--text-3)",
+                fontFamily: "var(--font-sans)",
+              }}
             >
               {showLog ? "Hide" : "Dev"}
             </button>

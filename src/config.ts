@@ -1,11 +1,9 @@
-import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import { z } from "zod";
 import { ModelKey, ModelRegistryEntry } from "./types";
+import { getOpenRouterApiKey, getSecureSettings } from "./secureSettings";
 
 const APP_ROOT = path.resolve(__dirname, "..");
-
-loadEnv({ path: path.join(APP_ROOT, ".env") });
 
 const DEFAULT_MODELS = [
   {
@@ -66,12 +64,9 @@ export const PORT = Number.parseInt(process.env.PORT ?? "9966", 10);
 const rawDbPath = process.env.DB_PATH ?? path.join("data", "story-tourney.sqlite");
 export const DB_PATH = path.isAbsolute(rawDbPath) ? rawDbPath : path.join(APP_ROOT, rawDbPath);
 
-const configuredModels = loadModelDefinitions();
-const modelRegistry = configuredModels.map((model) => buildModelConfig(model));
-const modelRegistryByKey = new Map(modelRegistry.map((model) => [model.modelKey, model]));
-
 export function getModelConfig(modelKey: ModelKey): ModelRegistryEntry {
-  const config = modelRegistryByKey.get(modelKey);
+  const modelRegistry = getModelRegistry();
+  const config = modelRegistry.find((model) => model.modelKey === modelKey);
   if (!config) {
     throw new Error(`Unknown model: ${modelKey}`);
   }
@@ -79,53 +74,32 @@ export function getModelConfig(modelKey: ModelKey): ModelRegistryEntry {
 }
 
 export function getModelRegistry() {
-  return modelRegistry;
+  return loadModelDefinitions().map((model) => buildModelConfig(model));
 }
 
 function loadModelDefinitions() {
-  if (!process.env.MODEL_REGISTRY_JSON) {
-    return modelRegistrySchema.parse(DEFAULT_MODELS);
+  const secureModels = getSecureSettings().models;
+  if (secureModels.length >= 2) {
+    return modelRegistrySchema.parse(secureModels);
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(process.env.MODEL_REGISTRY_JSON);
-  } catch (error) {
-    throw new Error(`Invalid MODEL_REGISTRY_JSON: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  return modelRegistrySchema.parse(parsed);
+  return modelRegistrySchema.parse(DEFAULT_MODELS);
 }
 
 function buildModelConfig(model: z.infer<typeof modelDefinitionSchema>): ModelRegistryEntry {
-  const prefix = toEnvPrefix(model.modelKey);
-  const apiKey = process.env.OPENROUTER_API_KEY ?? process.env[`${prefix}_API_KEY`] ?? null;
-  const siteUrl = process.env.OPENROUTER_SITE_URL ?? process.env[`${prefix}_SITE_URL`] ?? null;
-  const appName = process.env.OPENROUTER_APP_NAME ?? process.env[`${prefix}_APP_NAME`] ?? null;
-  const resolvedProviderModelId = process.env[`${prefix}_MODEL_ID`] ?? model.providerModelId;
-  const resolvedModelId =
-    process.env[`${prefix}_MODEL_ID_SHORT`] ??
-    model.modelId ??
-    resolvedProviderModelId.split("/").pop() ??
-    resolvedProviderModelId;
-  const providerOrder = (process.env[`${prefix}_PROVIDER_ORDER`] ?? (model.providerOrder ?? []).join(","))
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const apiKey = getOpenRouterApiKey();
+  const resolvedProviderModelId = model.providerModelId;
+  const resolvedModelId = model.modelId ?? resolvedProviderModelId.split("/").pop() ?? resolvedProviderModelId;
 
   return {
     modelKey: model.modelKey,
-    displayName: process.env[`${prefix}_DISPLAY_NAME`] ?? resolvedModelId,
+    displayName: model.displayName,
     modelId: resolvedModelId,
     provider: apiKey ? "openrouter" : "mock",
     providerModelId: resolvedProviderModelId,
-    providerOrder,
+    providerOrder: model.providerOrder ?? [],
     apiKey,
-    siteUrl,
-    appName,
+    siteUrl: null,
+    appName: null,
   };
-}
-
-function toEnvPrefix(modelKey: string) {
-  return modelKey.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").toUpperCase();
 }

@@ -329,6 +329,41 @@ export class TournamentRepository {
     return rows.map((row) => row.model_key);
   }
 
+  getCompletedModelKeysForPhase(tournamentId: string, phase: PhaseName) {
+    const modelKeys = this.getTournamentModels(tournamentId).map((model) => model.modelKey);
+    if (phase === "generation") {
+      const rows = db
+        .prepare("SELECT DISTINCT model_key FROM story_versions WHERE tournament_id = ? AND round = 'original'")
+        .all(tournamentId) as Array<{ model_key: ModelKey }>;
+      return rows.map((row) => row.model_key);
+    }
+
+    if (phase === "revision") {
+      const rows = db
+        .prepare("SELECT DISTINCT model_key FROM story_versions WHERE tournament_id = ? AND round = 'revised'")
+        .all(tournamentId) as Array<{ model_key: ModelKey }>;
+      return rows.map((row) => row.model_key);
+    }
+
+    if (phase === "review") {
+      const expectedCount = Math.max(modelKeys.length - 1, 0);
+      const rows = db
+        .prepare(
+          "SELECT reviewer_model_key FROM reviews WHERE tournament_id = ? GROUP BY reviewer_model_key HAVING COUNT(*) >= ?"
+        )
+        .all(tournamentId, expectedCount) as Array<{ reviewer_model_key: ModelKey }>;
+      return rows.map((row) => row.reviewer_model_key);
+    }
+
+    const expectedCount = modelKeys.length;
+    const rows = db
+      .prepare(
+        "SELECT reviewer_model_key FROM final_rankings WHERE tournament_id = ? GROUP BY reviewer_model_key HAVING COUNT(*) >= ?"
+      )
+      .all(tournamentId, expectedCount) as Array<{ reviewer_model_key: ModelKey }>;
+    return rows.map((row) => row.reviewer_model_key);
+  }
+
   getLatestCallAttempt(tournamentId: string, phase: PhaseName, modelKey: ModelKey) {
     const row = db
       .prepare(
@@ -510,11 +545,13 @@ export class TournamentRepository {
   }
 
   getPhaseProgress(tournamentId: string, phase: PhaseName, total: number): TournamentProgress {
-    const complete = this.getSuccessfulModelKeys(tournamentId, phase).length;
+    const completedKeys = new Set(this.getCompletedModelKeysForPhase(tournamentId, phase));
+    const complete = completedKeys.size;
     const failed = db
-      .prepare("SELECT COUNT(DISTINCT model_key) as count FROM provider_calls WHERE tournament_id = ? AND phase = ? AND status = 'failed'")
-      .get(tournamentId, phase) as { count: number };
-    return { phase, complete, total, failed: failed.count };
+      .prepare("SELECT DISTINCT model_key FROM provider_calls WHERE tournament_id = ? AND phase = ? AND status = 'failed'")
+      .all(tournamentId, phase) as Array<{ model_key: ModelKey }>;
+    const unresolvedFailures = failed.filter((row) => !completedKeys.has(row.model_key)).length;
+    return { phase, complete, total, failed: unresolvedFailures };
   }
 
   buildTournamentView(tournamentId: string): TournamentView {

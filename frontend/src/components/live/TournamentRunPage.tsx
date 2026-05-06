@@ -54,16 +54,24 @@ export default function TournamentRunPage({ tournamentId }: LiveRunPageProps) {
 
   if (error && !data) {
     return (
-      <main className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center px-4">
-        <p className="text-red-400 font-sans">{error}</p>
-        <Link href="/" className="btn-primary mt-4">Back to Setup</Link>
+      <main
+        className="min-h-screen flex flex-col items-center justify-center px-4 gap-4"
+      >
+        <p className="text-sm" style={{ color: "oklch(65% 0.14 22)", fontFamily: "var(--font-sans)" }}>
+          {error}
+        </p>
+        <Link href="/" className="btn-primary">
+          Back to Setup
+        </Link>
       </main>
     );
   }
 
   if (!data) {
     return (
-      <main className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+      <main
+        className="min-h-screen flex items-center justify-center"
+      >
         <div className="spinner-lg" />
       </main>
     );
@@ -73,30 +81,53 @@ export default function TournamentRunPage({ tournamentId }: LiveRunPageProps) {
   const status = tournament.status;
 
   if (status === "completed" && data.results.length > 0) {
-    return <ResultsView data={data} onNewPrompt={() => router.push("/")} onRunAgain={handleRetry} />;
+    return (
+      <ResultsView data={data} onNewPrompt={() => router.push("/")} onRunAgain={handleRetry} />
+    );
   }
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 sm:px-6 pt-10 pb-16">
+    <main
+      className="min-h-screen flex flex-col items-center px-4 sm:px-6 pt-10 pb-20"
+    >
       <header className="w-full max-w-3xl mb-8">
-        <Link href="/" className="text-zinc-500 hover:text-zinc-300 text-sm font-sans underline underline-offset-4 decoration-zinc-600 transition-colors">
-          Back to Setup
+        <Link href="/" className="back-link">
+          <span style={{ marginLeft: "0.25rem" }}>Setup</span>
         </Link>
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-zinc-100 mt-4 leading-snug">
+
+        <h1
+          className="font-serif text-2xl sm:text-3xl font-semibold mt-5 leading-snug"
+          style={{ color: "var(--text-1)" }}
+        >
           {tournament.prompt}
         </h1>
-        {tournament.genreHint && (
-          <p className="text-zinc-500 font-sans text-sm mt-1">
-            Style: {tournament.genreHint}
-          </p>
-        )}
-        <p className="text-zinc-600 font-sans text-xs mt-1">
-          {tournament.minWords}–{tournament.maxWords} words · {data.models.length} models
-        </p>
+
+        <div
+          className="flex items-center gap-3 mt-2 text-xs flex-wrap"
+          style={{ color: "var(--text-3)", fontFamily: "var(--font-sans)" }}
+        >
+          {tournament.genreHint && (
+            <>
+              <span>{tournament.genreHint}</span>
+              <span style={{ color: "var(--border)" }}>·</span>
+            </>
+          )}
+          <span>{tournament.minWords}–{tournament.maxWords} words</span>
+          <span style={{ color: "var(--border)" }}>·</span>
+          <span>{data.models.length} models</span>
+        </div>
       </header>
 
       {error && (
-        <div className="w-full max-w-3xl mb-4 px-4 py-3 rounded-lg bg-red-950/60 border border-red-800/50 text-red-300 text-sm font-sans">
+        <div
+          className="w-full max-w-3xl mb-5 px-4 py-3 rounded-lg text-sm"
+          style={{
+            background: "oklch(55% 0.175 22 / 0.07)",
+            border: "1px solid oklch(55% 0.175 22 / 0.3)",
+            color: "oklch(65% 0.14 22)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
           {error}
         </div>
       )}
@@ -109,8 +140,12 @@ export default function TournamentRunPage({ tournamentId }: LiveRunPageProps) {
       />
 
       {status === "failed" && (
-        <button onClick={handleRetry} disabled={retrying} className="btn-primary mt-8">
-          {retrying ? "Retrying..." : "Retry Failed Step"}
+        <button
+          onClick={handleRetry}
+          disabled={retrying}
+          className="btn-primary mt-10"
+        >
+          {retrying ? "Retrying…" : "Retry Failed Step"}
         </button>
       )}
     </main>

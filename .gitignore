@@ -4,3 +4,4 @@ data
 tourneys
 .env
 .DS_Store
+/scripts

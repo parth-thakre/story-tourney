@@ -125,6 +125,127 @@ export class OpenRouterAdapter implements ModelAdapter {
     });
   }
 
+  private async fetchStreamingRaw(body: Record<string, unknown>) {
+    const requestBody = { ...body, stream: true };
+    const response = await this.sendRequest(requestBody);
+    return { response, requestBody };
+  }
+
+  private async readStreamingResponse(response: Response) {
+    if (!response.body) {
+      throw new Error("OpenRouter streaming response did not include a body");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let content = "";
+    let reasoning = "";
+    let refusal: string | null = null;
+    let finishReason: string | null = null;
+    let error: { message?: string; code?: string } | undefined;
+    let id: string | undefined;
+    let model: string | undefined;
+    let chunkCount = 0;
+
+    const handlePayload = (payload: string) => {
+      const trimmed = payload.trim();
+      if (!trimmed || trimmed === "[DONE]") {
+        return;
+      }
+
+      const chunk = JSON.parse(trimmed) as {
+        id?: string;
+        model?: string;
+        error?: { message?: string; code?: string };
+        choices?: Array<{
+          finish_reason?: string | null;
+          error?: { message?: string; code?: string };
+          delta?: {
+            content?: string | null;
+            reasoning?: string | null;
+            refusal?: string | null;
+          };
+        }>;
+      };
+      chunkCount += 1;
+      id = chunk.id ?? id;
+      model = chunk.model ?? model;
+      error = chunk.error ?? chunk.choices?.[0]?.error ?? error;
+      const choice = chunk.choices?.[0];
+      finishReason = choice?.finish_reason ?? finishReason;
+      content += choice?.delta?.content ?? "";
+      reasoning += choice?.delta?.reasoning ?? "";
+      refusal = choice?.delta?.refusal ?? refusal;
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const event of events) {
+        const dataLines = event
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice("data:".length).trim());
+        if (dataLines.length === 0) {
+          continue;
+        }
+        handlePayload(dataLines.join("\n"));
+      }
+
+      if (done) {
+        break;
+      }
+    }
+
+    if (buffer.trim()) {
+      const dataLines = buffer
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice("data:".length).trim());
+      if (dataLines.length > 0) {
+        handlePayload(dataLines.join("\n"));
+      }
+    }
+
+    return {
+      id,
+      object: "chat.completion",
+      model,
+      streamed: true,
+      chunk_count: chunkCount,
+      choices: [
+        {
+          index: 0,
+          finish_reason: finishReason,
+          error,
+          message: {
+            role: "assistant",
+            content: content || null,
+            reasoning: reasoning || null,
+            refusal,
+          },
+        },
+      ],
+    };
+  }
+
+  private async sendStreamingCompletion(body: Record<string, unknown>) {
+    const { response, requestBody } = await this.fetchStreamingRaw(body);
+    if (!response.ok) {
+      throw await this.buildHttpError(response);
+    }
+    return {
+      raw: await this.readStreamingResponse(response),
+      requestBody,
+    };
+  }
+
   private async buildHttpError(response: Response) {
     const text = await response.text();
     try {
@@ -194,38 +315,43 @@ export class OpenRouterAdapter implements ModelAdapter {
   async generateJson<T>(input: { system?: string; prompt: string; temperature?: number }): Promise<{ parsed: T; rawResponse: unknown; requestBody: unknown }> {
     const baseBody = this.buildRequestBody(input);
 
-    let response = await this.sendRequest(baseBody);
+    let requestBody: Record<string, unknown> = { ...baseBody, stream: true };
+    let response = await this.sendRequest(requestBody);
 
     if (response.status === 404) {
-      response = await this.sendRequest({
+      requestBody = {
         ...baseBody,
+        stream: true,
         provider: {
           order: this.options.providerOrder,
           data_collection: "deny",
           zdr: true,
         },
-      });
+      };
+      response = await this.sendRequest(requestBody);
     }
 
     if (response.status === 404 && !this.isStrictProviderPinned()) {
-      response = await this.sendRequest({
+      requestBody = {
         ...baseBody,
+        stream: true,
         provider: {
           data_collection: "deny",
           zdr: true,
         },
-      });
+      };
+      response = await this.sendRequest(requestBody);
     }
 
     if (!response.ok) {
       throw await this.buildHttpError(response);
     }
 
-    let raw = await response.json();
+    let raw = await this.readStreamingResponse(response);
 
     if (this.isFiltered(raw)) {
       if (!this.isStrictProviderPinned() || this.canFallbackProviderForFilter(input)) {
-        const retryResponse = await this.sendRequest({
+        const retry = await this.sendStreamingCompletion({
           ...baseBody,
           provider: {
             data_collection: "deny",
@@ -233,11 +359,8 @@ export class OpenRouterAdapter implements ModelAdapter {
           },
         });
 
-        if (!retryResponse.ok) {
-          throw new OpenRouterFilteredError(this.filteredMessage(raw), raw);
-        }
-
-        raw = await retryResponse.json();
+        raw = retry.raw;
+        requestBody = retry.requestBody;
         if (this.isFiltered(raw)) {
           throw new OpenRouterFilteredError(this.filteredMessage(raw), raw);
         }
@@ -250,16 +373,13 @@ export class OpenRouterAdapter implements ModelAdapter {
     let content = message?.content ?? message?.reasoning;
 
     if (typeof content === "string" && this.isPlainTextRefusal(content)) {
-      const retryResponse = await this.sendRequest({
+      const retry = await this.sendStreamingCompletion({
         ...baseBody,
         messages: this.buildRefusalRetryMessages(baseBody.messages),
       });
 
-      if (!retryResponse.ok) {
-        throw await this.buildHttpError(retryResponse);
-      }
-
-      raw = await retryResponse.json();
+      raw = retry.raw;
+      requestBody = retry.requestBody;
       message = raw.choices?.[0]?.message;
       content = message?.content ?? message?.reasoning;
     }
@@ -271,7 +391,7 @@ export class OpenRouterAdapter implements ModelAdapter {
       return {
         parsed: parseJsonText<T>(content),
         rawResponse: raw,
-        requestBody: baseBody,
+        requestBody,
       };
     } catch (error) {
       throw new OpenRouterParseError(error instanceof Error ? error.message : String(error), raw);
