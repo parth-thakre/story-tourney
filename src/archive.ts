@@ -1,14 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PhaseName, ProviderCall, TournamentView } from "./types";
+import { ProviderCall, TournamentView } from "./types";
 
 const TOURNEYS_DIR = path.resolve(__dirname, "..", "tourneys");
-
-function ensureDir(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 function safeJson(value: string | null) {
   if (!value) {
@@ -26,17 +20,16 @@ function tournamentDir(tournamentId: string) {
 }
 
 export function ensureTournamentArchive(tournamentId: string) {
-  ensureDir(TOURNEYS_DIR);
-  ensureDir(tournamentDir(tournamentId));
-  ensureDir(path.join(tournamentDir(tournamentId), "calls"));
-  ensureDir(path.join(tournamentDir(tournamentId), "snapshots"));
+  const directory = tournamentDir(tournamentId);
+  fs.mkdirSync(path.join(directory, "calls"), { recursive: true });
+  fs.mkdirSync(path.join(directory, "snapshots"), { recursive: true });
 }
 
 export function archiveProviderCall(call: ProviderCall) {
   ensureTournamentArchive(call.tournamentId);
   const callBase = `${call.phase}-${call.modelKey}-attempt-${call.attempt}`;
   const callDir = path.join(tournamentDir(call.tournamentId), "calls", callBase);
-  ensureDir(callDir);
+  fs.mkdirSync(callDir, { recursive: true });
 
   fs.writeFileSync(
     path.join(callDir, "meta.json"),
